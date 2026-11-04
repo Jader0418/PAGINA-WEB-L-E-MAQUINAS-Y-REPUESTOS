@@ -58,7 +58,16 @@ function validIp(value: string | null): string | null {
   if (ipv4.length === 4 && ipv4.every((part) => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255)) {
     return ip;
   }
-  if (ip.includes(":") && /^[0-9a-fA-F:]+$/.test(ip) && ip.length <= 45) return ip;
+  if (ip.includes(":") && /^[0-9a-fA-F:]+$/.test(ip) && ip.length <= 45) {
+    const halves = ip.split("::");
+    if (halves.length > 2) return null;
+    const left = halves[0] ? halves[0].split(":") : [];
+    const right = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+    const groups = [...left, ...right];
+    if (!groups.every((part) => /^[0-9a-fA-F]{1,4}$/.test(part))) return null;
+    if (halves.length === 2 && groups.length < 8) return ip;
+    if (halves.length === 1 && groups.length === 8) return ip;
+  }
   return null;
 }
 
@@ -411,7 +420,7 @@ Deno.serve(async (request: Request) => {
 
   if (quoteError || !quoteData) {
     const message = quoteError?.message || "database_error";
-    const known = ["RATE_LIMITED", "CONSENT_REQUIRED", "PRODUCT_NOT_AVAILABLE", "INVALID_QUANTITY", "INVALID_PRODUCT", "INVALID_CUSTOMER"];
+    const known = ["RATE_LIMITED", "CONSENT_REQUIRED", "PRODUCT_NOT_AVAILABLE", "INVALID_QUANTITY", "INVALID_PRODUCT", "INVALID_CUSTOMER", "IDEMPOTENCY_KEY_REQUIRED"];
     const matched = known.find((code) => message.includes(code));
     const status = matched === "RATE_LIMITED" ? 429 : matched === "PRODUCT_NOT_AVAILABLE" ? 409 : matched ? 400 : 500;
     console.error("Quote database operation failed:", matched || "database_error");
