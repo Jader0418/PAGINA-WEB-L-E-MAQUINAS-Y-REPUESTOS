@@ -176,7 +176,9 @@ function showProduct(id) {
     : '<p class="detail-media-note">Video demostrativo pendiente de cargar para esta referencia.</p>';
   document.getElementById("productDetail").innerHTML =
     '<div class="product-detail-layout" style="--tile:' + product.tile + '">' +
-    '<div class="product-detail-art"><img src="' + escapeHtml(primaryImageFor(product)) + '" alt="' + (hasPhoto ? 'Fotografía de ' : 'Ilustración referencial de ') + escapeHtml(product.name) + '"></div>' +
+    '<div class="product-detail-art"><img id="detailMainImage" src="' + escapeHtml(primaryImageFor(product)) + '" alt="' + (hasPhoto ? 'Fotografía de ' : 'Ilustración referencial de ') + escapeHtml(product.name) + '">' +
+    (hasPhoto && product.photoUrls.length > 1 ? '<div class="detail-photo-strip">' + product.photoUrls.slice(1).map(function (url, index) { return '<button type="button" data-photo="' + escapeHtml(url) + '" aria-label="Ver fotografía ' + (index + 2) + '"><img src="' + escapeHtml(url) + '" alt=""></button>'; }).join("") + '</div>' : '') +
+    '</div>' +
     '<div class="product-detail-copy"><p class="section-kicker">' + escapeHtml(product.brand) + ' · ' + escapeHtml(product.category) + '</p>' +
     '<h2 id="detailTitle">' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p>' +
     '<dl class="detail-specs">' + specifications.map(function (spec) { return '<div><dt>' + spec[0] + '</dt><dd>' + escapeHtml(spec[1]) + '</dd></div>'; }).join("") + '</dl>' +
@@ -300,7 +302,7 @@ function createDraftPdf(payload) {
   doc.text("Productos solicitados", margin, y);
   y += 7;
   payload.items.forEach(function (item, index) {
-    const line = (index + 1) + ". " + item.name + " | " + item.brand + " | Ref.: " + (item.model || "Por confirmar") + " | Cantidad: " + item.quantity + " | Precio unitario: " + (item.unitPrice ? formatCOP(item.unitPrice) : "A confirmar");
+    const line = (index + 1) + ". " + item.name + " | " + item.brand + " | Ref.: " + (item.model || "Por confirmar") + " | Cantidad: " + item.quantity + " | Precio unitario: " + (item.unitPrice ? formatCOP(item.unitPrice) : "A confirmar") + (item.discountPercent ? " | Descuento: " + item.discountPercent + "%" : "");
     const parts = doc.splitTextToSize(line, pageWidth - margin * 2);
     if (y + parts.length * 5 > 275) { doc.addPage(); y = 20; }
     doc.setFont("helvetica", "normal");
@@ -402,10 +404,17 @@ grid.addEventListener("click", function (event) {
 });
 
 document.getElementById("productDetail").addEventListener("click", function (event) {
-  const button = event.target.closest("[data-add-detail]");
-  if (!button) return;
-  addToQuote(button.dataset.addDetail);
-  closeDialog(productDialog);
+  const photoButton = event.target.closest("[data-photo]");
+  const addButton = event.target.closest("[data-add-detail]");
+  if (photoButton) {
+    const mainImage = document.getElementById("detailMainImage");
+    if (mainImage) mainImage.src = photoButton.dataset.photo;
+    return;
+  }
+  if (addButton) {
+    addToQuote(addButton.dataset.addDetail);
+    closeDialog(productDialog);
+  }
 });
 
 quoteItems.addEventListener("click", function (event) {
