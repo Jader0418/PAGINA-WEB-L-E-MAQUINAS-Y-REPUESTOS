@@ -1,0 +1,6 @@
+project_id = "le-maquinas-y-repuestos"
+
+[functions.create-quote]
+# La función valida el apikey público y el origen de la web.
+# Solo el servidor conoce la clave secreta de Supabase.
+verify_jwt = false
