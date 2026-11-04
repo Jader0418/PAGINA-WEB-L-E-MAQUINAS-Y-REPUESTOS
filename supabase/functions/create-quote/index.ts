@@ -137,7 +137,12 @@ function validatePayload(payload: Record<string, unknown>) {
       (consent as Record<string, unknown>).marketingAccepted === true
   );
 
-  return { customer: normalizedCustomer, items: normalizedItems, marketingConsent };
+  const submissionId = normalizeText(payload.submissionId, 36);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionId)) {
+    throw new Error("IDEMPOTENCY_KEY_REQUIRED");
+  }
+
+  return { customer: normalizedCustomer, items: normalizedItems, marketingConsent, submissionId };
 }
 
 function sanitizePdfText(value: string): string {
@@ -392,6 +397,7 @@ Deno.serve(async (request: Request) => {
   const marketingConsent = { accepted: validated.marketingConsent };
 
   const { data: quoteData, error: quoteError } = await supabase.rpc("create_quote_with_items", {
+    p_idempotency_key: validated.submissionId,
     p_customer: validated.customer,
     p_items: validated.items,
     p_data_consent: dataConsent,
@@ -454,19 +460,22 @@ Deno.serve(async (request: Request) => {
   });
 
   if (upload.error) {
-    console.error("Quote PDF storage failed:", upload.error.message);
-  } else {
+    // Puede ser un reintento de la misma cotización cuyo PDF ya existe.
+    console.error("Quote PDF storage upload:", upload.error.message);
+  }
+
+  const signed = await supabase.storage.from("quote-pdfs").createSignedUrl(storagePath, 60 * 60 * 24 * 7, {
+    download: filename,
+  });
+  if (!signed.error) {
+    pdfSignedUrl = signed.data.signedUrl;
     pdfStored = true;
     await supabase.from("quotes").update({
       pdf_path: storagePath,
       updated_at: new Date().toISOString(),
     }).eq("id", quoteData.id);
-
-    const signed = await supabase.storage.from("quote-pdfs").createSignedUrl(storagePath, 60 * 60 * 24 * 7, {
-      download: filename,
-    });
-    if (!signed.error) pdfSignedUrl = signed.data.signedUrl;
-    else console.error("Quote PDF signed URL failed:", signed.error.message);
+  } else {
+    console.error("Quote PDF signed URL failed:", signed.error.message);
   }
 
   const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
@@ -552,6 +561,7 @@ Deno.serve(async (request: Request) => {
     emailStatus,
     pdfStored,
     pdfSignedUrl,
+    idempotentReplay: Boolean(quoteData.idempotentReplay),
     warning: !customerEmailSent
       ? "La solicitud quedó registrada. El correo no pudo confirmarse; conserva el consecutivo y contacta a L&E."
       : null,
