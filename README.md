@@ -38,7 +38,7 @@ La interfaz sigue la dirección **`specimen-catalogue`** de la skill **`design-t
 - [x] Fichas de producto con campos técnicos pendientes de confirmar.
 - [x] Lista de cotización con cantidades y eliminación de productos.
 - [x] Formulario de datos del cliente y autorización de tratamiento de datos desmarcada por defecto.
-- [x] Generación local de PDF preliminar en el navegador cuando la librería está disponible.
+- [x] PDF preliminar local en modo demostración; PDF del servidor cuando Supabase esté configurado.
 - [x] Acceso contextual a WhatsApp.
 - [x] Sección de promociones, marcas, empresa y contacto.
 - [x] Página informativa legal en preparación.
@@ -69,6 +69,11 @@ Las referencias incluidas en esta primera versión son registros de catálogo il
 ├── app.js
 ├── config.js
 ├── legal.html
+├── supabase/
+│   ├── config.toml
+│   ├── migrations/
+│   ├── functions/
+│   └── tests/
 └── assets/
     ├── credits.json
     ├── sewing-machine-specimen.svg
@@ -112,6 +117,8 @@ Para activar la publicación por primera vez:
 ## Sistema de cotizaciones: backend
 
 La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge Functions y Storage privado)** y **Resend** para correo transaccional.
+
+**Estado de conexión:** el código de la migración y la Edge Function ya está en GitHub, pero todavía no se ha aplicado a un proyecto Supabase ni se han configurado secretos de producción. El modo local seguirá mostrando una vista previa hasta completar la conexión.
 
 ### Flujo implementado en el servidor
 
@@ -239,7 +246,7 @@ La clave publicable puede estar en el navegador con RLS y la función correctame
 - Los PDF se almacenan en bucket privado y el enlace firmado expira.
 - El correo se considera enviado solo cuando Resend devuelve confirmación. El estado se registra en la cotización.
 - La autorización de mercadeo es independiente y opcional.
-- La dirección IP se registra para seguridad y trazabilidad; su uso, conservación y comunicación deberán quedar descritos en la política definitiva.
+- La dirección IP se registra para seguridad y trazabilidad cuando está disponible en los encabezados de red confiables; su uso, conservación y comunicación deberán quedar descritos en la política definitiva.
 
 ### Pendiente antes de activar solicitudes reales
 
