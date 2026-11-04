@@ -5,7 +5,7 @@
   Cuando se apruebe la política definitiva, sincroniza policyVersion con el secreto PRIVACY_POLICY_VERSION.
 */
 window.LE_CONFIG = {
-  supabaseUrl: "https://cyjrgeljtbbrlpgzzfso.supabase.co",
-  publishableKey: "sb_publishable__pjEaM5MykvaZCHFs7TJWw_CPoffWID",
+  supabaseUrl: "",
+  publishableKey: "",
   policyVersion: "v1.0-borrador"
 };
