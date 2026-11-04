@@ -208,7 +208,7 @@ declare
   v_accepted boolean;
   v_marketing_accepted boolean;
 begin
-  if auth.role() is distinct from 'service_role' then
+  if current_user <> 'service_role' then
     raise exception 'FORBIDDEN';
   end if;
 
