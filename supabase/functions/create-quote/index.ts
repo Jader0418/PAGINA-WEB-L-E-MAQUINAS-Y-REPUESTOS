@@ -490,12 +490,15 @@ Deno.serve(async (request: Request) => {
   if (resendApiKey && fromEmail && businessEmail) {
     const attachment = base64(pdfBytes);
     const quoteNumber = quoteData.quoteNumber;
+    customerEmailSent = Boolean(quoteData.customerEmailSentAt);
+    businessEmailSent = Boolean(quoteData.businessEmailSentAt);
     const customer = quoteData.customer;
     const itemLines = quoteData.items.map((item: Record<string, unknown>) =>
       "<li>" + escapeHtml(item.name) + " - cantidad: " + escapeHtml(item.quantity) + "</li>"
     ).join("");
     const safeName = escapeHtml(customer.firstName);
     const safeLastName = escapeHtml(customer.lastName);
+    if (!customerEmailSent) {
     const customerEmail = await sendResendEmail({
       apiKey: resendApiKey,
       from: fromEmail,
@@ -513,7 +516,9 @@ Deno.serve(async (request: Request) => {
     });
     customerEmailSent = customerEmail.ok;
     if (!customerEmail.ok) emailErrors.push("customer");
+    }
 
+    if (!businessEmailSent) {
     const businessEmailResult = await sendResendEmail({
       apiKey: resendApiKey,
       from: fromEmail,
@@ -532,6 +537,7 @@ Deno.serve(async (request: Request) => {
     });
     businessEmailSent = businessEmailResult.ok;
     if (!businessEmailResult.ok) emailErrors.push("business");
+    }
 
     emailStatus = customerEmailSent && businessEmailSent
       ? "sent"
