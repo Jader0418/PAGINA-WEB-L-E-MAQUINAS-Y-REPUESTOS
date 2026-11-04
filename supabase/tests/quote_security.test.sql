@@ -20,7 +20,7 @@ select ok(
 select ok(
   not has_function_privilege(
     'anon',
-    'public.create_quote_with_items(jsonb,jsonb,jsonb,jsonb,inet,text,text,text,text)',
+    'public.create_quote_with_items(uuid,jsonb,jsonb,jsonb,jsonb,inet,text,text,text,text)',
     'EXECUTE'
   ),
   'anon cannot execute privileged quote creation RPC'
