@@ -1,0 +1,52 @@
+name: Deploy L&E website to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "styles.css"
+      - "app.js"
+      - "config.js"
+      - "legal.html"
+      - "assets/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar archivos del sitio
+        run: |
+          mkdir -p dist
+          cp index.html styles.css app.js config.js legal.html dist/
+          cp -R assets dist/assets
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Cargar artefacto del sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Publicar sitio
+        id: deployment
+        uses: actions/deploy-pages@v4
