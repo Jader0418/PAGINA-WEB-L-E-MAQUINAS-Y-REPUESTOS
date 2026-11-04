@@ -15,7 +15,7 @@ create table if not exists public.catalog_brands (
 
 insert into public.catalog_brands (name, slug) values
   ('JACK', 'jack'),
-  ('KANSEW SPECIAL', 'kan sew-special'),
+  ('KANSEW SPECIAL', 'kansew-special'),
   ('SIRUBA', 'siruba'),
   ('JUKI', 'juki'),
   ('BROTHER', 'brother'),
