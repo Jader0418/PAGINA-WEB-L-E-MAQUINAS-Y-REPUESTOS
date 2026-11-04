@@ -1,3 +1,4 @@
+# Publica la web al actualizar los archivos del sitio o este workflow.
 name: Deploy L&E website to GitHub Pages
 
 on:
