@@ -70,6 +70,16 @@ function getClientIp(request: Request): string | null {
   return forwarded ? validIp(forwarded.split(",")[0]) : null;
 }
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[character] || character));
+}
+
 function normalizeText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") return "";
   return value.trim().replace(/\s+/g, " ").slice(0, maxLength);
@@ -466,9 +476,10 @@ Deno.serve(async (request: Request) => {
     const quoteNumber = quoteData.quoteNumber;
     const customer = quoteData.customer;
     const itemLines = quoteData.items.map((item: Record<string, unknown>) =>
-      "<li>" + String(item.name) + " - cantidad: " + String(item.quantity) + "</li>"
+      "<li>" + escapeHtml(item.name) + " - cantidad: " + escapeHtml(item.quantity) + "</li>"
     ).join("");
-    const safeName = normalizeText(customer.firstName, 80).replace(/[<>&"]/g, "");
+    const safeName = escapeHtml(customer.firstName);
+    const safeLastName = escapeHtml(customer.lastName);
     const customerEmail = await sendResendEmail({
       apiKey: resendApiKey,
       from: fromEmail,
@@ -494,9 +505,9 @@ Deno.serve(async (request: Request) => {
       replyTo: customer.email,
       subject: "Nueva solicitud " + quoteNumber + " - " + customer.firstName + " " + customer.lastName,
       html: "<h2>Nueva solicitud de cotización</h2><p><strong>Consecutivo:</strong> " + quoteNumber +
-        "</p><p><strong>Cliente:</strong> " + safeName + " " + normalizeText(customer.lastName, 80).replace(/[<>&"]/g, "") +
-        "</p><p><strong>Correo:</strong> " + customer.email + "</p><p><strong>Celular:</strong> " + customer.phone +
-        "</p><p><strong>Ciudad:</strong> " + customer.city + "</p><ul>" + itemLines + "</ul><p>Se adjunta PDF.</p>",
+        "</p><p><strong>Cliente:</strong> " + safeName + " " + safeLastName +
+        "</p><p><strong>Correo:</strong> " + escapeHtml(customer.email) + "</p><p><strong>Celular:</strong> " + escapeHtml(customer.phone) +
+        "</p><p><strong>Ciudad:</strong> " + escapeHtml(customer.city) + "</p><ul>" + itemLines + "</ul><p>Se adjunta PDF.</p>",
       text: "Nueva solicitud " + quoteNumber + " de " + customer.firstName + " " + customer.lastName +
         ". Correo: " + customer.email + ". Celular: " + customer.phone + ".",
       attachmentBase64: attachment,
