@@ -97,6 +97,7 @@ create table if not exists public.quote_sequences (
 create table if not exists public.quotes (
   id uuid primary key default gen_random_uuid(),
   quote_number text not null unique,
+  idempotency_key uuid not null unique,
   quote_year integer not null,
   customer_id uuid not null references public.customers(id),
   customer_name_snapshot text not null,
@@ -173,6 +174,7 @@ set public = false,
 
 -- Una cotización y sus líneas se crean dentro de una sola transacción.
 create or replace function public.create_quote_with_items(
+  p_idempotency_key uuid,
   p_customer jsonb,
   p_items jsonb,
   p_data_consent jsonb,
@@ -201,6 +203,7 @@ declare
   v_subtotal numeric(14,2) := 0;
   v_has_unpriced boolean := false;
   v_item_result jsonb := '[]'::jsonb;
+  v_existing jsonb;
   v_line_total numeric(14,2);
   v_accepted boolean;
   v_marketing_accepted boolean;
@@ -231,6 +234,62 @@ begin
     raise exception 'CONSENT_REQUIRED';
   end if;
   v_marketing_accepted := coalesce((p_marketing_consent->>'accepted')::boolean, false);
+
+  if p_idempotency_key is null then
+    raise exception 'IDEMPOTENCY_KEY_REQUIRED';
+  end if;
+
+  -- Serializa reintentos con la misma clave para evitar cotizaciones y correos duplicados.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_idempotency_key::text, 0)
+  );
+
+  select jsonb_build_object(
+    'id', q.id,
+    'quoteNumber', q.quote_number,
+    'createdAt', q.created_at,
+    'customer', jsonb_build_object(
+      'firstName', c.first_name,
+      'lastName', c.last_name,
+      'email', q.email_snapshot,
+      'phone', q.phone_snapshot,
+      'address', q.address_snapshot,
+      'city', q.city_snapshot
+    ),
+    'items', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'productId', qi.product_slug,
+        'name', qi.product_name_snapshot,
+        'brand', qi.brand_name_snapshot,
+        'category', qi.category_snapshot,
+        'model', qi.model_snapshot,
+        'quantity', qi.quantity,
+        'unitPrice', qi.unit_price,
+        'oldUnitPrice', qi.old_unit_price,
+        'discountPercent', qi.discount_percent,
+        'lineTotal', qi.line_total
+      ) order by qi.created_at, qi.id)
+      from public.quote_items qi
+      where qi.quote_id = q.id
+    ), '[]'::jsonb),
+    'subtotal', q.subtotal,
+    'currency', q.currency,
+    'marketingConsent', exists (
+      select 1 from public.privacy_consents pc
+      where pc.quote_id = q.id
+        and pc.consent_type = 'marketing'
+        and pc.accepted = true
+    ),
+    'idempotentReplay', true
+  )
+  into v_existing
+  from public.quotes q
+  join public.customers c on c.id = q.customer_id
+  where q.idempotency_key = p_idempotency_key;
+
+  if v_existing is not null then
+    return v_existing;
+  end if;
 
   -- Límite básico: máximo 8 solicitudes por dirección IP en una hora.
   if p_client_ip is not null and (
@@ -271,11 +330,11 @@ begin
   v_quote_id := gen_random_uuid();
 
   insert into public.quotes (
-    id, quote_number, quote_year, customer_id,
+    id, quote_number, idempotency_key, quote_year, customer_id,
     customer_name_snapshot, email_snapshot, phone_snapshot,
     address_snapshot, city_snapshot, client_ip, user_agent, created_at
   ) values (
-    v_quote_id, v_quote_number, v_year, v_customer_id,
+    v_quote_id, v_quote_number, p_idempotency_key, v_year, v_customer_id,
     trim(p_customer->>'firstName') || ' ' || trim(p_customer->>'lastName'),
     lower(trim(p_customer->>'email')),
     trim(p_customer->>'phone'),
@@ -384,16 +443,17 @@ begin
     'items', v_item_result,
     'subtotal', case when v_has_unpriced then null else v_subtotal end,
     'currency', 'COP',
-    'marketingConsent', v_marketing_accepted
+    'marketingConsent', v_marketing_accepted,
+    'idempotentReplay', false
   );
 end;
 $function$;
 
 revoke all on function public.create_quote_with_items(
-  jsonb,jsonb,jsonb,jsonb,inet,text,text,text,text
+  uuid,jsonb,jsonb,jsonb,jsonb,inet,text,text,text,text
 ) from public, anon, authenticated;
 grant execute on function public.create_quote_with_items(
-  jsonb,jsonb,jsonb,jsonb,inet,text,text,text,text
+  uuid,jsonb,jsonb,jsonb,jsonb,inet,text,text,text,text
 ) to service_role;
 
 -- Protección explícita para todas las tablas: el navegador no puede leer ni escribir datos personales.
