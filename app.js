@@ -1,14 +1,15 @@
 const products = [
-  { id: "plana-electronica", name: "Máquina plana electrónica", category: "Planas", subcategory: "Electrónica", brand: "JACK", description: "Costura recta para operaciones de confección. Consulta la referencia adecuada para tu material y ritmo de producción.", use: ["workshop", "home"], tile: "#DCEBFA", kind: "machine", featured: true },
-  { id: "fileteadora-mecatronica", name: "Fileteadora mecatrónica", category: "Fileteadoras", subcategory: "Mecatrónica", brand: "KANSEW SPECIAL", description: "Para operaciones de fileteado y acabado de prendas. Configuración y prestaciones por confirmar según modelo.", use: ["workshop"], tile: "#E8EDE9", kind: "machine" },
-  { id: "fileteadora-industrial", name: "Fileteadora industrial", category: "Fileteadoras", subcategory: "Industrial", brand: "SIRUBA", description: "Alternativa para procesos de sobrehilado. Consulta puntadas, calibre y configuración del equipo.", use: ["workshop"], tile: "#E8E3D9", kind: "machine" },
-  { id: "collarin-industrial", name: "Collarín industrial", category: "Collarines", subcategory: "Recubrimiento", brand: "KANSAI SPECIAL", description: "Equipo para acabados y recubrimiento en prendas. Verifica aplicaciones y accesorios con nuestro equipo.", use: ["workshop"], tile: "#DCE8E8", kind: "machine" },
-  { id: "bordadora", name: "Bordadora computarizada", category: "Bordadoras", subcategory: "Bordado", brand: "BROTHER", description: "Soluciones de bordado para personalizar prendas y desarrollar nuevos servicios. Modelos y cabezales por confirmar.", use: ["workshop", "home"], tile: "#EAE2F1", kind: "machine" },
-  { id: "presilladora", name: "Presilladora industrial", category: "Presilladoras", subcategory: "Refuerzo", brand: "JUKI", description: "Para operaciones de refuerzo y presillas. Consulta patrones, área de costura y funciones según referencia.", use: ["workshop"], tile: "#F2E5DD", kind: "machine" },
-  { id: "repuestos", name: "Repuestos para máquinas", category: "Repuestos", subcategory: "Componentes", brand: "SERVEX", description: "Componentes y piezas para mantenimiento y operación. Indica marca y referencia de tu máquina para validar compatibilidad.", use: ["workshop", "home"], tile: "#E3E8EF", kind: "parts" },
-  { id: "accesorios", name: "Accesorios de confección", category: "Accesorios", subcategory: "Complementos", brand: "SINGER", description: "Complementos y herramientas para tu espacio de costura. Disponibilidad y compatibilidad bajo consulta.", use: ["workshop", "home"], tile: "#F3EBD7", kind: "parts" }
+  { id: "plana-electronica", name: "Máquina plana electrónica", category: "Planas", subcategory: "Electrónica", brand: "Marca por confirmar", description: "Costura recta para operaciones de confección. Consulta la referencia adecuada para tu material y ritmo de producción.", use: ["workshop", "home"], tile: "#DCEBFA", kind: "machine", featured: true },
+  { id: "fileteadora-mecatronica", name: "Fileteadora mecatrónica", category: "Fileteadoras", subcategory: "Mecatrónica", brand: "Marca por confirmar", description: "Para operaciones de fileteado y acabado de prendas. Configuración y prestaciones por confirmar según modelo.", use: ["workshop"], tile: "#E8EDE9", kind: "machine" },
+  { id: "fileteadora-industrial", name: "Fileteadora industrial", category: "Fileteadoras", subcategory: "Industrial", brand: "Marca por confirmar", description: "Alternativa para procesos de sobrehilado. Consulta puntadas, calibre y configuración del equipo.", use: ["workshop"], tile: "#E8E3D9", kind: "machine" },
+  { id: "collarin-industrial", name: "Collarín industrial", category: "Collarines", subcategory: "Recubrimiento", brand: "Marca por confirmar", description: "Equipo para acabados y recubrimiento en prendas. Verifica aplicaciones y accesorios con nuestro equipo.", use: ["workshop"], tile: "#DCE8E8", kind: "machine" },
+  { id: "bordadora", name: "Bordadora computarizada", category: "Bordadoras", subcategory: "Bordado", brand: "Marca por confirmar", description: "Soluciones de bordado para personalizar prendas y desarrollar nuevos servicios. Modelos y cabezales por confirmar.", use: ["workshop", "home"], tile: "#EAE2F1", kind: "machine" },
+  { id: "presilladora", name: "Presilladora industrial", category: "Presilladoras", subcategory: "Refuerzo", brand: "Marca por confirmar", description: "Para operaciones de refuerzo y presillas. Consulta patrones, área de costura y funciones según referencia.", use: ["workshop"], tile: "#F2E5DD", kind: "machine" },
+  { id: "repuestos", name: "Repuestos para máquinas", category: "Repuestos", subcategory: "Componentes", brand: "Marca por confirmar", description: "Componentes y piezas para mantenimiento y operación. Indica marca y referencia de tu máquina para validar compatibilidad.", use: ["workshop", "home"], tile: "#E3E8EF", kind: "parts" },
+  { id: "accesorios", name: "Accesorios de confección", category: "Accesorios", subcategory: "Complementos", brand: "Marca por confirmar", description: "Complementos y herramientas para tu espacio de costura. Disponibilidad y compatibilidad bajo consulta.", use: ["workshop", "home"], tile: "#F3EBD7", kind: "parts" }
 ];
 
+const brandNames = ["JACK", "KANSEW SPECIAL", "SIRUBA", "JUKI", "BROTHER", "SINGER", "SERVEX", "KANSAI SPECIAL"];
 const machineImage = "assets/sewing-machine-specimen.svg";
 const partsImage = "assets/parts-specimen.svg";
 const quote = new Map();
@@ -38,7 +39,7 @@ function imageFor(product) {
 }
 
 function renderBrandOptions() {
-  const brands = Array.from(new Set(products.map(function (product) { return product.brand; }))).sort();
+  const brands = brandNames.slice();
   brandFilter.innerHTML = '<option value="all">Todas las marcas</option>' + brands.map(function (brand) {
     return '<option value="' + escapeHtml(brand) + '">' + escapeHtml(brand) + '</option>';
   }).join("");
@@ -63,7 +64,7 @@ function renderProducts() {
   const items = filteredProducts();
   document.getElementById("catalogResultCount").textContent = items.length + (items.length === 1 ? " resultado" : " resultados");
   if (!items.length) {
-    grid.innerHTML = '<div class="empty-results"><strong>No encontramos productos con esos filtros.</strong><br>Prueba otra búsqueda o limpia los filtros.</div>';
+    grid.innerHTML = '<div class="empty-results"><strong>' + (activeBrand !== "all" ? "Aún no hay referencias de " + escapeHtml(activeBrand) + " cargadas en el catálogo." : "No encontramos productos con esos filtros.") + '</strong><br>' + (activeBrand !== "all" ? "Escríbenos y confirmaremos los modelos y disponibilidad de esta marca." : "Prueba otra búsqueda o limpia los filtros.") + '</div>';
     return;
   }
 
