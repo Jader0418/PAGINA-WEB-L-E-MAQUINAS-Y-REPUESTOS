@@ -181,6 +181,7 @@ npx supabase db reset
 
 ```bash
 npx supabase functions serve create-quote --env-file supabase/functions/.env
+npx supabase test db
 ```
 
 ### Despliegue en Supabase
@@ -233,6 +234,7 @@ La clave publicable puede estar en el navegador con RLS y la función correctame
 - La Edge Function comprueba la clave publicable, el origen, los datos y el consentimiento.
 - La base de datos aplica un límite inicial de 8 cotizaciones por IP por hora.
 - El consecutivo y la fecha/hora se generan en el servidor; el navegador no puede decidir esos valores.
+- Cada envío lleva una clave idempotente: reintentar una solicitud no crea otro consecutivo ni vuelve a enviar correos ya confirmados.
 - Los precios, marcas y referencias se toman del catálogo maestro del servidor, no de los valores manipulables enviados por el navegador.
 - Los PDF se almacenan en bucket privado y el enlace firmado expira.
 - El correo se considera enviado solo cuando Resend devuelve confirmación. El estado se registra en la cotización.
