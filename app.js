@@ -1,12 +1,12 @@
 const products = [
-  { id: "plana-electronica", name: "Máquina plana electrónica", category: "Planas", subcategory: "Electrónica", brand: "Marca por confirmar", description: "Costura recta para operaciones de confección. Consulta la referencia adecuada para tu material y ritmo de producción.", use: ["workshop", "home"], tile: "#DCEBFA", kind: "machine", featured: true },
-  { id: "fileteadora-mecatronica", name: "Fileteadora mecatrónica", category: "Fileteadoras", subcategory: "Mecatrónica", brand: "Marca por confirmar", description: "Para operaciones de fileteado y acabado de prendas. Configuración y prestaciones por confirmar según modelo.", use: ["workshop"], tile: "#E8EDE9", kind: "machine" },
-  { id: "fileteadora-industrial", name: "Fileteadora industrial", category: "Fileteadoras", subcategory: "Industrial", brand: "Marca por confirmar", description: "Alternativa para procesos de sobrehilado. Consulta puntadas, calibre y configuración del equipo.", use: ["workshop"], tile: "#E8E3D9", kind: "machine" },
-  { id: "collarin-industrial", name: "Collarín industrial", category: "Collarines", subcategory: "Recubrimiento", brand: "Marca por confirmar", description: "Equipo para acabados y recubrimiento en prendas. Verifica aplicaciones y accesorios con nuestro equipo.", use: ["workshop"], tile: "#DCE8E8", kind: "machine" },
-  { id: "bordadora", name: "Bordadora computarizada", category: "Bordadoras", subcategory: "Bordado", brand: "Marca por confirmar", description: "Soluciones de bordado para personalizar prendas y desarrollar nuevos servicios. Modelos y cabezales por confirmar.", use: ["workshop", "home"], tile: "#EAE2F1", kind: "machine" },
-  { id: "presilladora", name: "Presilladora industrial", category: "Presilladoras", subcategory: "Refuerzo", brand: "Marca por confirmar", description: "Para operaciones de refuerzo y presillas. Consulta patrones, área de costura y funciones según referencia.", use: ["workshop"], tile: "#F2E5DD", kind: "machine" },
-  { id: "repuestos", name: "Repuestos para máquinas", category: "Repuestos", subcategory: "Componentes", brand: "Marca por confirmar", description: "Componentes y piezas para mantenimiento y operación. Indica marca y referencia de tu máquina para validar compatibilidad.", use: ["workshop", "home"], tile: "#E3E8EF", kind: "parts" },
-  { id: "accesorios", name: "Accesorios de confección", category: "Accesorios", subcategory: "Complementos", brand: "Marca por confirmar", description: "Complementos y herramientas para tu espacio de costura. Disponibilidad y compatibilidad bajo consulta.", use: ["workshop", "home"], tile: "#F3EBD7", kind: "parts" }
+  { id: "plana-electronica", name: "Máquina plana electrónica", category: "Planas", subcategory: "Electrónica", brand: "Marca por confirmar", description: "Costura recta para operaciones de confección. Consulta la referencia adecuada para tu material y ritmo de producción.", use: ["workshop", "home"], tile: "#DCEBFA", kind: "machine", featured: true, model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} },
+  { id: "fileteadora-mecatronica", name: "Fileteadora mecatrónica", category: "Fileteadoras", subcategory: "Mecatrónica", brand: "Marca por confirmar", description: "Para operaciones de fileteado y acabado de prendas. Configuración y prestaciones por confirmar según modelo.", use: ["workshop"], tile: "#E8EDE9", kind: "machine", model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} },
+  { id: "fileteadora-industrial", name: "Fileteadora industrial", category: "Fileteadoras", subcategory: "Industrial", brand: "Marca por confirmar", description: "Alternativa para procesos de sobrehilado. Consulta puntadas, calibre y configuración del equipo.", use: ["workshop"], tile: "#E8E3D9", kind: "machine", model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} },
+  { id: "collarin-industrial", name: "Collarín industrial", category: "Collarines", subcategory: "Recubrimiento", brand: "Marca por confirmar", description: "Equipo para acabados y recubrimiento en prendas. Verifica aplicaciones y accesorios con nuestro equipo.", use: ["workshop"], tile: "#DCE8E8", kind: "machine", model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} },
+  { id: "bordadora", name: "Bordadora computarizada", category: "Bordadoras", subcategory: "Bordado", brand: "Marca por confirmar", description: "Soluciones de bordado para personalizar prendas y desarrollar nuevos servicios. Modelos y cabezales por confirmar.", use: ["workshop", "home"], tile: "#EAE2F1", kind: "machine", model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} },
+  { id: "presilladora", name: "Presilladora industrial", category: "Presilladoras", subcategory: "Refuerzo", brand: "Marca por confirmar", description: "Para operaciones de refuerzo y presillas. Consulta patrones, área de costura y funciones según referencia.", use: ["workshop"], tile: "#F2E5DD", kind: "machine", model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} },
+  { id: "repuestos", name: "Repuestos para máquinas", category: "Repuestos", subcategory: "Componentes", brand: "Marca por confirmar", description: "Componentes y piezas para mantenimiento y operación. Indica marca y referencia de tu máquina para validar compatibilidad.", use: ["workshop", "home"], tile: "#E3E8EF", kind: "parts", model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} },
+  { id: "accesorios", name: "Accesorios de confección", category: "Accesorios", subcategory: "Complementos", brand: "Marca por confirmar", description: "Complementos y herramientas para tu espacio de costura. Disponibilidad y compatibilidad bajo consulta.", use: ["workshop", "home"], tile: "#F3EBD7", kind: "parts", model: "Referencia por confirmar", price: null, oldPrice: null, discountPercent: null, photoUrls: [], videoUrl: "", specs: {} }
 ];
 
 const brandNames = ["JACK", "KANSEW SPECIAL", "SIRUBA", "JUKI", "BROTHER", "SINGER", "SERVEX", "KANSAI SPECIAL"];
@@ -36,6 +36,14 @@ function escapeHtml(value) {
 
 function imageFor(product) {
   return product.kind === "parts" ? partsImage : machineImage;
+}
+
+function primaryImageFor(product) {
+  return product.photoUrls && product.photoUrls.length ? product.photoUrls[0] : imageFor(product);
+}
+
+function formatCOP(value) {
+  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(value);
 }
 
 function renderBrandOptions() {
@@ -69,13 +77,22 @@ function renderProducts() {
   }
 
   grid.innerHTML = items.map(function (product) {
-    const badge = product.featured ? '<span class="specimen-badge">Destacado</span>' : "";
+    const hasPhoto = product.photoUrls && product.photoUrls.length > 0;
+    const hasPrice = Number.isFinite(product.price) && product.price > 0;
+    const hasDiscount = hasPrice && Number.isFinite(product.oldPrice) && product.oldPrice > product.price;
+    const badge = hasDiscount
+      ? '<span class="specimen-badge specimen-badge--discount">-' + (product.discountPercent || Math.round((1 - product.price / product.oldPrice) * 100)) + '%</span>'
+      : (product.featured ? '<span class="specimen-badge">Destacado</span>' : "");
+    const priceMarkup = hasPrice
+      ? formatCOP(product.price) + (hasDiscount ? '<small><s>' + formatCOP(product.oldPrice) + '</s> Precio promocional</small>' : '<small>Precio sujeto a confirmación</small>')
+      : 'Consultar precio<small>Precio y disponibilidad por confirmar</small>';
     return '<article class="specimen-card" data-kind="' + product.kind + '">' +
       '<div class="specimen-art" style="--tile:' + product.tile + '">' + badge +
-      '<img src="' + imageFor(product) + '" alt="Ilustración referencial de ' + escapeHtml(product.name) + '" loading="lazy"></div>' +
+      '<img src="' + escapeHtml(primaryImageFor(product)) + '" alt="' + (hasPhoto ? 'Fotografía de ' : 'Ilustración referencial de ') + escapeHtml(product.name) + '" loading="lazy">' +
+      (!hasPhoto ? '<span class="specimen-image-note">Imagen referencial</span>' : '') + '</div>' +
       '<div class="specimen-content"><div class="specimen-meta"><span>' + escapeHtml(product.category.toUpperCase()) + ' / ' + escapeHtml(product.subcategory.toUpperCase()) + '</span><span>' + escapeHtml(product.brand) + '</span></div>' +
       '<h3>' + escapeHtml(product.name) + '</h3><p>' + escapeHtml(product.description) + '</p>' +
-      '<div class="specimen-bottom"><div class="specimen-price">Consultar precio<small>Precio y disponibilidad por confirmar</small></div>' +
+      '<div class="specimen-bottom"><div class="specimen-price">' + priceMarkup + '</div>' +
       '<div class="specimen-actions"><button class="detail-link" type="button" data-detail="' + product.id + '">Ver ficha</button><button class="add-link" type="button" data-add="' + product.id + '">＋ Cotizar</button></div></div></div></article>';
   }).join("");
 }
@@ -142,20 +159,30 @@ function closeDialog(dialog) {
 function showProduct(id) {
   const product = products.find(function (item) { return item.id === id; });
   if (!product) return;
+  const specs = product.specs || {};
   const specifications = [
-    ["Tipo de motor", "Confirmar según referencia"],
-    ["Velocidad", "Consultar ficha del fabricante"],
-    ["Lubricación", "Confirmar según modelo"],
-    ["Voltaje", "Confirmar antes de la compra"],
-    ["Garantía", "Condiciones por producto"]
+    ["Referencia", product.model || "Por confirmar"],
+    ["Tipo de motor", specs.motor || "Confirmar según referencia"],
+    ["Velocidad", specs.speed || "Consultar ficha del fabricante"],
+    ["Lubricación", specs.lubrication || "Confirmar según modelo"],
+    ["Voltaje", specs.voltage || "Confirmar antes de la compra"],
+    ["Garantía", specs.warranty || "Condiciones por producto"]
   ];
+  const hasPhoto = product.photoUrls && product.photoUrls.length > 0;
+  const hasPrice = Number.isFinite(product.price) && product.price > 0;
+  const priceText = hasPrice ? formatCOP(product.price) : "Consultar con asesor";
+  const videoMarkup = product.videoUrl
+    ? '<div class="detail-video-wrap"><h3>Video del equipo</h3><video class="detail-video" controls preload="metadata" src="' + escapeHtml(product.videoUrl) + '">Tu navegador no soporta video.</video></div>'
+    : '<p class="detail-media-note">Video demostrativo pendiente de cargar para esta referencia.</p>';
   document.getElementById("productDetail").innerHTML =
     '<div class="product-detail-layout" style="--tile:' + product.tile + '">' +
-    '<div class="product-detail-art"><img src="' + imageFor(product) + '" alt="Ilustración referencial de ' + escapeHtml(product.name) + '"></div>' +
+    '<div class="product-detail-art"><img src="' + escapeHtml(primaryImageFor(product)) + '" alt="' + (hasPhoto ? 'Fotografía de ' : 'Ilustración referencial de ') + escapeHtml(product.name) + '"></div>' +
     '<div class="product-detail-copy"><p class="section-kicker">' + escapeHtml(product.brand) + ' · ' + escapeHtml(product.category) + '</p>' +
     '<h2 id="detailTitle">' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p>' +
-    '<dl class="detail-specs">' + specifications.map(function (spec) { return '<div><dt>' + spec[0] + '</dt><dd>' + spec[1] + '</dd></div>'; }).join("") + '</dl>' +
-    '<p><strong>Precio:</strong> consultar con asesor. La ficha definitiva se completa con la referencia exacta del equipo.</p>' +
+    '<dl class="detail-specs">' + specifications.map(function (spec) { return '<div><dt>' + spec[0] + '</dt><dd>' + escapeHtml(spec[1]) + '</dd></div>'; }).join("") + '</dl>' +
+    '<div class="detail-price"><strong>' + priceText + '</strong>' + (hasPrice && product.oldPrice > product.price ? '<s>' + formatCOP(product.oldPrice) + '</s><span>-' + (product.discountPercent || Math.round((1 - product.price / product.oldPrice) * 100)) + '%</span>' : '') + '</div>' +
+    videoMarkup +
+    '<p class="detail-disclaimer">' + (hasPhoto ? "Fotografía de la referencia." : "Ilustración referencial; se cargarán fotografías propias de la referencia.") + ' Precio, descuentos, disponibilidad y condiciones se confirman antes de emitir la cotización oficial.</p>' +
     '<button class="button button-primary" type="button" data-add-detail="' + product.id + '">Agregar a cotización <span aria-hidden="true">→</span></button>' +
     '</div></div>';
   if (typeof productDialog.showModal === "function") productDialog.showModal();
@@ -204,7 +231,10 @@ function quotePayload(formData) {
       name: item.product.name,
       brand: item.product.brand,
       category: item.product.category,
-      quantity: item.quantity
+      quantity: item.quantity,
+      model: item.product.model || "Referencia por confirmar",
+      unitPrice: item.product.price,
+      discountPercent: item.product.discountPercent
     };
   });
   return {
@@ -270,7 +300,7 @@ function createDraftPdf(payload) {
   doc.text("Productos solicitados", margin, y);
   y += 7;
   payload.items.forEach(function (item, index) {
-    const line = (index + 1) + ". " + item.name + " | " + item.brand + " | Cantidad: " + item.quantity;
+    const line = (index + 1) + ". " + item.name + " | " + item.brand + " | Ref.: " + (item.model || "Por confirmar") + " | Cantidad: " + item.quantity + " | Precio unitario: " + (item.unitPrice ? formatCOP(item.unitPrice) : "A confirmar");
     const parts = doc.splitTextToSize(line, pageWidth - margin * 2);
     if (y + parts.length * 5 > 275) { doc.addPage(); y = 20; }
     doc.setFont("helvetica", "normal");
