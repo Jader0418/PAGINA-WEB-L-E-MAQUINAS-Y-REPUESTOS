@@ -118,7 +118,7 @@ Para activar la publicación por primera vez:
 
 La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge Functions y Storage privado)** y **Resend** para correo transaccional.
 
-**Estado de conexión:** el código de la migración y la Edge Function ya está en GitHub, pero todavía no se ha aplicado a un proyecto Supabase ni se han configurado secretos de producción. El modo local seguirá mostrando una vista previa hasta completar la conexión.
+**Estado de conexión (4 de noviembre de 2026):** el proyecto principal de Supabase `LE-MAQUINAS-REPUESTOS` está creado en `sa-east-1` (São Paulo) y la migración de cotizaciones ya fue aplicada. Las siete tablas, las ocho marcas iniciales y el bucket privado `quote-pdfs` existen y se verificaron los permisos: `anon` y `authenticated` no pueden leer los datos personales ni ejecutar la función RPC. La Edge Function `create-quote` está en GitHub, pero aún no aparece desplegada en Supabase. Tampoco se han configurado los secretos de correo ni se ha aprobado la política definitiva. `config.js` permanece en modo demostración hasta completar el despliegue seguro.
 
 ### Flujo implementado en el servidor
 
@@ -137,7 +137,7 @@ La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge
 supabase/
 ├── config.toml
 ├── migrations/
-│   └── 20261104000100_create_quotes_system.sql
+│   └── 20261104182721_create_quotes_system.sql
 ├── functions/
 │   ├── create-quote/
 │   │   └── index.ts
@@ -162,7 +162,7 @@ Las tablas operativas tienen Row Level Security habilitado y los permisos de lec
 
 ### Preparación de Supabase
 
-1. Crea un proyecto en [Supabase](https://supabase.com/dashboard).
+1. El proyecto principal ya está creado en Supabase: `cyjrgeljtbbrlpgzzfso` (`sa-east-1`, São Paulo).
 2. Instala Node.js y ejecuta la CLI de Supabase mediante `npx`.
 3. Copia el archivo de entorno de ejemplo para desarrollo local:
 
@@ -193,7 +193,7 @@ npx supabase test db
 
 ### Despliegue en Supabase
 
-Vincula el proyecto utilizando el identificador que aparece en el panel de Supabase:
+El repositorio ya contiene `supabase/config.toml` apuntando al proyecto principal de São Paulo. La integración GitHub–Supabase puede aplicar automáticamente las migraciones y desplegar la Edge Function cuando esté habilitada la opción **Deploy to production** en la configuración de GitHub Integration. Antes de activarla, verifica que la migración local tenga la misma versión que la ya registrada en la base de datos.
 
 ```bash
 npx supabase login
@@ -250,13 +250,14 @@ La clave publicable puede estar en el navegador con RLS y la función correctame
 
 ### Pendiente antes de activar solicitudes reales
 
-- Crear el proyecto Supabase y aplicar la migración.
-- Configurar los secretos de producción.
+- Confirmar que la integración GitHub–Supabase tiene habilitado **Deploy to production** y que `create-quote` aparece en Edge Functions.
+- Configurar los secretos de producción para la función.
 - Verificar un dominio de envío en Resend.
-- Completar `config.js` con la URL y clave publicable.
+- Completar `config.js` con la URL y clave publicable cuando la Edge Function esté desplegada y probada.
 - Aprobar y publicar la Política de Tratamiento de Datos, completar los datos legales de la empresa y fijar la versión definitiva. La Edge Function rechaza solicitudes mientras `PRIVACY_POLICY_APPROVED` no esté en `true`.
 - Cargar referencias, marcas, fotografías y precios reales en `catalog_products`. La migración incluye productos de demostración sin precio ni marca asignada.
 - Ejecutar las pruebas de permisos y una prueba completa de cotización, PDF y correo en un entorno controlado.
+- Habilitar GitHub Pages en **Repository Settings → Pages → Build and deployment → Source → GitHub Actions**. El último workflow falló porque el sitio Pages todavía no estaba habilitado.
 
 ## Información legal
 
