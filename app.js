@@ -18,6 +18,8 @@ let activeBrand = "all";
 let activeAudience = "workshop";
 let lastPdfUrl = null;
 let toastTimer = null;
+let activeSubmissionId = null;
+let activeSubmissionFingerprint = "";
 
 const grid = document.getElementById("productGrid");
 const searchInput = document.getElementById("productSearch");
@@ -226,6 +228,16 @@ function resetFilters() {
   renderProducts();
 }
 
+function createSubmissionId() {
+  const bytes = new Uint8Array(16);
+  window.crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, function (byte) { return byte.toString(16).padStart(2, "0"); });
+  return hex.slice(0, 4).join("") + "-" + hex.slice(4, 6).join("") + "-" +
+    hex.slice(6, 8).join("") + "-" + hex.slice(8, 10).join("") + "-" + hex.slice(10).join("");
+}
+
 function quotePayload(formData) {
   const items = Array.from(quote.values()).map(function (item) {
     return {
@@ -239,7 +251,7 @@ function quotePayload(formData) {
       discountPercent: item.product.discountPercent
     };
   });
-  return {
+  const payload = {
     customer: {
       firstName: formData.get("firstName").trim(),
       lastName: formData.get("lastName").trim(),
@@ -258,6 +270,18 @@ function quotePayload(formData) {
     policyVersion: (window.LE_CONFIG && window.LE_CONFIG.policyVersion) || "v1.0-borrador",
     source: "web-le"
   };
+  const fingerprint = JSON.stringify({
+    customer: payload.customer,
+    items: payload.items.map(function (item) { return { productId: item.productId, quantity: item.quantity }; }),
+    marketingAccepted: payload.consent.marketingAccepted,
+    policyVersion: payload.policyVersion
+  });
+  if (!activeSubmissionId || fingerprint !== activeSubmissionFingerprint) {
+    activeSubmissionId = createSubmissionId();
+    activeSubmissionFingerprint = fingerprint;
+  }
+  payload.submissionId = activeSubmissionId;
+  return payload;
 }
 
 function createDraftPdf(payload) {
@@ -345,7 +369,7 @@ function showQuoteResult(payload, pdfUrl, apiResult) {
     const emailMessage = customerSent
       ? "Enviamos el PDF al correo que registraste."
       : "La solicitud quedó guardada, pero el envío del correo no pudo confirmarse. Conserva el consecutivo y contacta a L&E.";
-    const adminMessage = businessSent ? " L&E también recibió la notificación interna." : "";
+    const adminMessage = businessSent ? " L&E también recibió la notificación interna." : " La notificación interna a L&E no pudo confirmarse; el equipo deberá revisar el registro en Supabase.";
     quoteResult.innerHTML = '<h4>Solicitud registrada: ' + escapeHtml(quoteNumber) + '</h4><p>' +
       emailMessage + adminMessage + (apiResult.warning ? " " + escapeHtml(apiResult.warning) : "") +
       '</p><div class="quote-result-actions">' +
