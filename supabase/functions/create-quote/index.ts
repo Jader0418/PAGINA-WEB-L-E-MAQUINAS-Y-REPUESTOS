@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 
 const corsHeaders = {
@@ -36,8 +36,8 @@ function getJsonEnv(name: string): Record<string, string> {
 
 function getServiceKey(): string {
   const keyMap = getJsonEnv("SUPABASE_SECRET_KEYS");
-  return keyMap.default || keyMap.service_role ||
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+    keyMap.default || keyMap.service_role ||
     Deno.env.get("SUPABASE_SECRET_KEY") || "";
 }
 
