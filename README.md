@@ -109,28 +109,145 @@ Para activar la publicación por primera vez:
 4. Cuando el workflow termine correctamente, GitHub mostrará la URL pública en **Settings → Pages** y en el resumen de la ejecución.
 
 
-## Configuración e integraciones pendientes
+## Sistema de cotizaciones: backend
 
-El archivo `config.js` permite configurar la URL pública del backend:
+La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge Functions y Storage privado)** y **Resend** para correo transaccional.
+
+### Flujo implementado en el servidor
+
+1. El navegador envía los datos de contacto, los identificadores de producto, cantidades y consentimientos.
+2. La Edge Function valida los campos, limita el tamaño del formulario y rechaza el campo trampa anti-spam.
+3. PostgreSQL valida que cada producto exista y esté activo, guarda o actualiza el registro del cliente y crea la cotización con sus líneas en una sola transacción.
+4. El consecutivo se genera de forma transaccional por año: `COT-AAAA-0001`.
+5. Se guarda evidencia separada de autorización para gestionar la cotización y de autorización opcional de mercadeo.
+6. El servidor genera el PDF, intenta almacenarlo en el bucket privado `quote-pdfs` y crea un enlace firmado de duración limitada.
+7. Resend envía el PDF al cliente y una notificación independiente al correo comercial de L&E.
+8. La base de datos conserva el estado de generación y entrega de correo.
+
+### Archivos principales del backend
+
+```text
+supabase/
+├── config.toml
+├── migrations/
+│   └── 20261104000100_create_quotes_system.sql
+├── functions/
+│   ├── create-quote/
+│   │   └── index.ts
+│   └── .env.example
+└── tests/
+    └── quote_security.test.sql
+```
+
+### Tablas creadas por la migración
+
+| Tabla | Propósito |
+|---|---|
+| `catalog_brands` | Marcas disponibles |
+| `catalog_products` | Catálogo maestro, referencias, fotos, videos y precios |
+| `customers` | Datos de contacto de los clientes |
+| `quote_sequences` | Consecutivos anuales sin colisiones |
+| `quotes` | Encabezado de la cotización, fechas y estado |
+| `quote_items` | Productos, cantidades y valores históricos |
+| `privacy_consents` | Evidencia de autorizaciones por finalidad |
+
+Las tablas operativas tienen Row Level Security habilitado y los permisos de lectura/escritura se revocan a `anon` y `authenticated`. La Edge Function utiliza la clave secreta del servidor; nunca se incluye en el frontend. Las operaciones administrativas del catálogo deberán realizarse posteriormente desde un panel seguro o procesos internos autorizados.
+
+### Preparación de Supabase
+
+1. Crea un proyecto en [Supabase](https://supabase.com/dashboard).
+2. Instala Node.js y ejecuta la CLI de Supabase mediante `npx`.
+3. Copia el archivo de entorno de ejemplo para desarrollo local:
+
+```bash
+copy supabase\functions\.env.example supabase\functions\.env
+```
+
+En Linux o macOS:
+
+```bash
+cp supabase/functions/.env.example supabase/functions/.env
+```
+
+4. Completa los valores locales de Supabase y Resend en `supabase/functions/.env`. Este archivo está excluido de Git y no debe compartirse.
+5. Inicia Supabase local y aplica la migración:
+
+```bash
+npx supabase start
+npx supabase db reset
+```
+
+6. Sirve la Edge Function local:
+
+```bash
+npx supabase functions serve create-quote --env-file supabase/functions/.env
+```
+
+### Despliegue en Supabase
+
+Vincula el proyecto utilizando el identificador que aparece en el panel de Supabase:
+
+```bash
+npx supabase login
+npx supabase link --project-ref TU_PROJECT_REF
+npx supabase db push
+npx supabase functions deploy create-quote
+```
+
+Configura las variables de producción desde **Supabase Dashboard → Edge Functions → Secrets**. Los nombres requeridos son:
+
+- `ALLOWED_ORIGINS`: por ejemplo `https://jader0418.github.io`.
+- `PRIVACY_POLICY_APPROVED`: debe permanecer `false` hasta que la empresa apruebe y publique la política definitiva.
+- `PRIVACY_POLICY_VERSION`: versión real de la política publicada.
+- `RESEND_API_KEY`: clave secreta de Resend.
+- `RESEND_FROM_EMAIL`: remitente de un dominio verificado en Resend.
+- `QUOTE_NOTIFICATION_EMAIL`: correo comercial que recibirá las nuevas solicitudes.
+- `QUOTE_REPLY_TO`: correo al que responderán los clientes.
+
+Supabase proporciona las variables y claves propias del proyecto en el entorno de las Edge Functions. No intentes guardar claves reservadas `SUPABASE_*` como secretos personalizados si la plataforma ya las inyecta.
+
+### Configurar el frontend
+
+En `config.js` completa solamente los dos valores públicos:
 
 ```javascript
 window.LE_CONFIG = {
-  apiBaseUrl: ""
+  supabaseUrl: "https://TU_PROJECT_REF.supabase.co",
+  publishableKey: "sb_publishable_TU_CLAVE_PUBLICA"
 };
 ```
 
-Cuando exista un backend, `app.js` podrá enviar la solicitud como JSON al endpoint `POST /quotes`. La respuesta esperada debe incluir, como mínimo, un consecutivo y los datos del PDF y del estado de envío del correo.
+La clave publicable puede estar en el navegador con RLS y la función correctamente configurados. **Nunca** coloques `service_role`, `secret key` o `RESEND_API_KEY` en `config.js`.
 
-**Importante:** en la configuración actual el formulario trabaja en modo de demostración. El PDF generado en el navegador es una vista previa; los datos personales no se almacenan en una base de datos ni se envían automáticamente por correo. Para producción es necesario desarrollar y conectar:
+### Preparación de Resend
 
-- API segura para crear cotizaciones.
-- Base de datos para clientes, productos, detalle de cotización, fechas y evidencia de consentimiento.
-- Generación de PDF oficial desde el servidor.
-- Servicio de correo transaccional.
-- Consecutivo único generado en el backend.
-- Controles de acceso, protección de datos, retención y registro de eventos.
+1. Crea una cuenta en [Resend](https://resend.com/).
+2. Verifica el dominio desde el que L&E enviará los mensajes.
+3. Crea una API key y guárdala únicamente como secreto `RESEND_API_KEY` en Supabase.
+4. Configura `RESEND_FROM_EMAIL`, `QUOTE_NOTIFICATION_EMAIL` y `QUOTE_REPLY_TO`.
+5. Realiza pruebas con una dirección autorizada antes de activar el envío a clientes.
 
-No se deben guardar contraseñas, claves privadas ni secretos en `config.js` o en el código público del frontend.
+### Controles y límites actuales
+
+- El formulario público no permite leer ni consultar cotizaciones.
+- La Edge Function comprueba la clave publicable, el origen, los datos y el consentimiento.
+- La base de datos aplica un límite inicial de 8 cotizaciones por IP por hora.
+- El consecutivo y la fecha/hora se generan en el servidor; el navegador no puede decidir esos valores.
+- Los precios, marcas y referencias se toman del catálogo maestro del servidor, no de los valores manipulables enviados por el navegador.
+- Los PDF se almacenan en bucket privado y el enlace firmado expira.
+- El correo se considera enviado solo cuando Resend devuelve confirmación. El estado se registra en la cotización.
+- La autorización de mercadeo es independiente y opcional.
+- La dirección IP se registra para seguridad y trazabilidad; su uso, conservación y comunicación deberán quedar descritos en la política definitiva.
+
+### Pendiente antes de activar solicitudes reales
+
+- Crear el proyecto Supabase y aplicar la migración.
+- Configurar los secretos de producción.
+- Verificar un dominio de envío en Resend.
+- Completar `config.js` con la URL y clave publicable.
+- Aprobar y publicar la Política de Tratamiento de Datos, completar los datos legales de la empresa y fijar la versión definitiva. La Edge Function rechaza solicitudes mientras `PRIVACY_POLICY_APPROVED` no esté en `true`.
+- Cargar referencias, marcas, fotografías y precios reales en `catalog_products`. La migración incluye productos de demostración sin precio ni marca asignada.
+- Ejecutar las pruebas de permisos y una prueba completa de cotización, PDF y correo en un entorno controlado.
 
 ## Información legal
 
