@@ -286,9 +286,14 @@
           </div>
           <label class="consent-check">
             <input type="checkbox" name="dataConsent" required>
-            <span>Autorizo de manera libre, previa, expresa e informada a L&E MÁQUINAS Y REPUESTOS para recolectar, almacenar y tratar mis datos personales con la finalidad de elaborar mi cotización, prestarme asesoría comercial relacionada con esta solicitud y gestionar la atención que requiera, conforme a la Política de Tratamiento de Datos Personales. Conozco mis derechos de conocer, actualizar, rectificar y solicitar la supresión de mis datos, así como los canales para ejercerlos.</span>
+            <span>Autorizo de manera libre, previa, expresa e informada a L&E MÁQUINAS Y REPUESTOS para recolectar, almacenar y tratar mis datos personales con la finalidad de elaborar y responder mi cotización, prestarme asesoría relacionada con esta solicitud y gestionar pedidos, garantías y soporte que yo solicite. También autorizo el registro de datos técnicos de esta solicitud, como dirección IP, fecha y hora y versión de la política, para seguridad y trazabilidad, conforme a la Política de Tratamiento de Datos Personales. Conozco mis derechos de conocer, actualizar, rectificar y solicitar la supresión de mis datos, así como los canales para ejercerlos.</span>
           </label>
-          <p class="consent-extra">La autorización para recibir publicidad o promociones no relacionadas con esta cotización será opcional y, si se habilita, se solicitará por separado.</p>
+          <label class="consent-check consent-check--optional">
+            <input type="checkbox" name="marketingConsent">
+            <span>Autorizo opcionalmente a L&E MÁQUINAS Y REPUESTOS para enviarme información comercial, novedades y promociones por correo electrónico o WhatsApp. Entiendo que puedo retirar esta autorización y que no es necesaria para solicitar una cotización.</span>
+          </label>
+          <label class="honeypot-field" aria-hidden="true">Deja este campo vacío<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+          <p class="consent-extra">La autorización para recibir promociones es independiente, opcional y no condiciona la atención de tu cotización.</p>
           <button class="button button-primary submit-quote" type="submit" id="submitQuote">Preparar solicitud de cotización <span aria-hidden="true">→</span></button>
           <p class="form-privacy">Tu información solo debe enviarse por canales seguros. Revisa nuestra <a href="legal.html#datos" target="_blank">Política de Tratamiento de Datos</a>.</p>
         </form>
