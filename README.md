@@ -96,6 +96,19 @@ http://localhost:5500
 
 También puedes abrir la carpeta en Visual Studio Code y utilizar la extensión Live Server.
 
+
+## Publicar en GitHub Pages
+
+El repositorio incluye un workflow en `.github/workflows/pages.yml` que prepara y publica solamente los archivos del sitio y la carpeta `assets` cada vez que se actualiza la web en `main`.
+
+Para activar la publicación por primera vez:
+
+1. Abre **Settings → Pages** en el repositorio.
+2. En **Build and deployment**, selecciona **GitHub Actions** como fuente.
+3. Abre la pestaña **Actions** y revisa la ejecución de **Deploy L&E website to GitHub Pages**.
+4. Cuando el workflow termine correctamente, GitHub mostrará la URL pública en **Settings → Pages** y en el resumen de la ejecución.
+
+
 ## Configuración e integraciones pendientes
 
 El archivo `config.js` permite configurar la URL pública del backend:
