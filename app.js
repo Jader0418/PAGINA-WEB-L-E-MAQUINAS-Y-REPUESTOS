@@ -409,8 +409,7 @@ async function handleQuoteSubmit(event) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": publishableKey,
-          "Authorization": "Bearer " + publishableKey
+          "apikey": publishableKey
         },
         body: JSON.stringify(payload)
       });
