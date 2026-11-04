@@ -118,7 +118,7 @@ Para activar la publicación por primera vez:
 
 La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge Functions y Storage privado)** y **Resend** para correo transaccional.
 
-**Estado de conexión (4 de noviembre de 2026):** el proyecto principal de Supabase `LE-MAQUINAS-REPUESTOS` está creado en `sa-east-1` (São Paulo) y la migración de cotizaciones ya fue aplicada. Las siete tablas, las ocho marcas iniciales y el bucket privado `quote-pdfs` existen y se verificaron los permisos: `anon` y `authenticated` no pueden leer los datos personales ni ejecutar la función RPC. La Edge Function `create-quote` está en GitHub, pero aún no aparece desplegada en Supabase. Tampoco se han configurado los secretos de correo ni se ha aprobado la política definitiva. `config.js` permanece en modo demostración hasta completar el despliegue seguro.
+**Estado de conexión (4 de noviembre de 2026):** el proyecto principal de Supabase `LE-MAQUINAS-REPUESTOS` está activo en `sa-east-1` (São Paulo). La migración de cotizaciones está aplicada y coincide con el archivo versionado en `supabase/migrations/20261104182721_create_quotes_system.sql`. Las siete tablas, ocho marcas de demostración y el bucket privado `quote-pdfs` existen. Se verificó que `anon` y `authenticated` no pueden leer los datos personales ni ejecutar la función RPC. La Edge Function `create-quote` ya está desplegada y activa en Supabase. GitHub Pages también quedó habilitado y la publicación del sitio terminó correctamente en el workflow #20. Aún faltan configurar el origen permitido y los secretos de correo, aprobar la política definitiva, cargar el catálogo real y activar `config.js`; por seguridad, el formulario sigue en modo demostración.
 
 ### Flujo implementado en el servidor
 
@@ -257,7 +257,7 @@ La clave publicable puede estar en el navegador con RLS y la función correctame
 - Aprobar y publicar la Política de Tratamiento de Datos, completar los datos legales de la empresa y fijar la versión definitiva. La Edge Function rechaza solicitudes mientras `PRIVACY_POLICY_APPROVED` no esté en `true`.
 - Cargar referencias, marcas, fotografías y precios reales en `catalog_products`. La migración incluye productos de demostración sin precio ni marca asignada.
 - Ejecutar las pruebas de permisos y una prueba completa de cotización, PDF y correo en un entorno controlado.
-- Habilitar GitHub Pages en **Repository Settings → Pages → Build and deployment → Source → GitHub Actions**. El último workflow falló porque el sitio Pages todavía no estaba habilitado.
+- GitHub Pages ya está habilitado y la publicación está confirmada: [abrir la página de L&E](https://jader0418.github.io/PAGINA-WEB-L-E-MAQUINAS-Y-REPUESTOS/).
 
 ## Información legal
 
