@@ -185,7 +185,7 @@ create or replace function public.create_quote_with_items(
 )
 returns jsonb
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $function$
 declare
