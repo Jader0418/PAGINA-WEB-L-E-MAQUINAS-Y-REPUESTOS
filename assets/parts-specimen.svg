@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 480" role="img" aria-labelledby="title desc">
+  <title id="title">Ilustración referencial de repuestos de costura</title>
+  <desc id="desc">Representación gráfica de componentes mecánicos y accesorios de maquinaria de confección.</desc>
+  <g fill="none" stroke="#0F172A" stroke-width="13" stroke-linejoin="round">
+    <circle cx="190" cy="218" r="105"/>
+    <circle cx="190" cy="218" r="43"/>
+    <path d="M190 103v33m0 164v33M75 218h33m164 0h33M109 137l24 24m114 114 24 24m0-162-24 24m-114 114-24 24"/>
+    <path d="M365 105h82v190h-82z"/>
+    <path d="M381 135h50m-50 30h50m-50 30h50m-50 30h50"/>
+    <path d="M342 325h152v43H342z"/>
+  </g>
+  <g fill="#0066CC">
+    <circle cx="190" cy="218" r="20"/>
+    <rect x="379" y="68" width="54" height="37" rx="7"/>
+    <rect x="366" y="299" width="82" height="24" rx="6"/>
+  </g>
+  <g fill="#0F172A">
+    <circle cx="190" cy="218" r="7"/>
+    <circle cx="365" cy="105" r="7"/>
+    <circle cx="447" cy="295" r="7"/>
+  </g>
+</svg>
