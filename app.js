@@ -250,8 +250,11 @@ function quotePayload(formData) {
     },
     items: items,
     dataConsent: true,
-    privacyPolicyVersion: "borrador-v1",
-    createdAt: new Date().toISOString(),
+    consent: {
+      accepted: true,
+      marketingAccepted: formData.get("marketingConsent") === "on"
+    },
+    website: String(formData.get("website") || ""),
     source: "web-le"
   };
 }
@@ -334,11 +337,18 @@ function showQuoteResult(payload, pdfUrl, apiResult) {
   const whatsappUrl = "https://wa.me/573505218141?text=" + encodeURIComponent(message);
 
   quoteResult.hidden = false;
-  if (apiResult && apiResult.consecutive) {
-    quoteResult.innerHTML = '<h4>Solicitud registrada: ' + escapeHtml(apiResult.consecutive) + '</h4><p>' +
-      (apiResult.emailSent ? "El PDF fue enviado al correo indicado." : "La solicitud fue registrada. El envío del correo está pendiente de confirmación.") +
+  if (apiResult && (apiResult.quoteNumber || apiResult.consecutive)) {
+    const quoteNumber = apiResult.quoteNumber || apiResult.consecutive;
+    const customerSent = Boolean(apiResult.customerEmailSent || apiResult.emailSent);
+    const businessSent = Boolean(apiResult.businessEmailSent);
+    const emailMessage = customerSent
+      ? "Enviamos el PDF al correo que registraste."
+      : "La solicitud quedó guardada, pero el envío del correo no pudo confirmarse. Conserva el consecutivo y contacta a L&E.";
+    const adminMessage = businessSent ? " L&E también recibió la notificación interna." : "";
+    quoteResult.innerHTML = '<h4>Solicitud registrada: ' + escapeHtml(quoteNumber) + '</h4><p>' +
+      emailMessage + adminMessage + (apiResult.warning ? " " + escapeHtml(apiResult.warning) : "") +
       '</p><div class="quote-result-actions">' +
-      (apiResult.pdfUrl ? '<a href="' + escapeHtml(apiResult.pdfUrl) + '" target="_blank" rel="noopener">Descargar PDF</a>' : "") +
+      (apiResult.pdfSignedUrl || apiResult.pdfUrl ? '<a href="' + escapeHtml(apiResult.pdfSignedUrl || apiResult.pdfUrl) + '" target="_blank" rel="noopener">Descargar PDF</a>' : "") +
       '<a class="whatsapp-result" href="' + whatsappUrl + '" target="_blank" rel="noopener">Hablar con un asesor</a></div>';
     return;
   }
@@ -366,15 +376,21 @@ async function handleQuoteSubmit(event) {
   submitButton.textContent = "Preparando solicitud…";
 
   try {
-    const apiBaseUrl = window.LE_CONFIG && window.LE_CONFIG.apiBaseUrl ? window.LE_CONFIG.apiBaseUrl.replace(/\/$/, "") : "";
-    if (apiBaseUrl) {
-      const response = await fetch(apiBaseUrl + "/quotes", {
+    const config = window.LE_CONFIG || {};
+    const supabaseUrl = String(config.supabaseUrl || "").replace(/\/$/, "");
+    const publishableKey = String(config.publishableKey || "");
+    if (supabaseUrl && publishableKey) {
+      const response = await fetch(supabaseUrl + "/functions/v1/create-quote", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": publishableKey,
+          "Authorization": "Bearer " + publishableKey
+        },
         body: JSON.stringify(payload)
       });
       const result = await response.json().catch(function () { return {}; });
-      if (!response.ok) throw new Error(result.message || "No fue posible registrar la solicitud.");
+      if (!response.ok) throw new Error(result.error || "No fue posible registrar la solicitud.");
       showQuoteResult(payload, null, result);
     } else {
       const pdf = createDraftPdf(payload);
