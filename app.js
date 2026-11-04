@@ -255,6 +255,7 @@ function quotePayload(formData) {
       marketingAccepted: formData.get("marketingConsent") === "on"
     },
     website: String(formData.get("website") || ""),
+    policyVersion: (window.LE_CONFIG && window.LE_CONFIG.policyVersion) || "v1.0-borrador",
     source: "web-le"
   };
 }
@@ -503,6 +504,8 @@ document.getElementById("backToCatalog").addEventListener("click", function () {
   closeDialog(quoteDialog);
 });
 document.getElementById("currentYear").textContent = new Date().getFullYear();
+const policyVersionLabel = document.getElementById("privacyPolicyVersionLabel");
+if (policyVersionLabel) policyVersionLabel.textContent = (window.LE_CONFIG && window.LE_CONFIG.policyVersion) || "v1.0-borrador";
 renderBrandOptions();
 renderProducts();
 renderQuoteItems();
