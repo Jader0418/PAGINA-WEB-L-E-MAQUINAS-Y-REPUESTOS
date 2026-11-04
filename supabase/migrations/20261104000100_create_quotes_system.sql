@@ -274,6 +274,9 @@ begin
     ), '[]'::jsonb),
     'subtotal', q.subtotal,
     'currency', q.currency,
+    'emailStatus', q.email_status,
+    'customerEmailSentAt', q.customer_email_sent_at,
+    'businessEmailSentAt', q.business_email_sent_at,
     'marketingConsent', exists (
       select 1 from public.privacy_consents pc
       where pc.quote_id = q.id
@@ -443,6 +446,9 @@ begin
     'items', v_item_result,
     'subtotal', case when v_has_unpriced then null else v_subtotal end,
     'currency', 'COP',
+    'emailStatus', 'pending',
+    'customerEmailSentAt', null,
+    'businessEmailSentAt', null,
     'marketingConsent', v_marketing_accepted,
     'idempotentReplay', false
   );
