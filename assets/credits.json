@@ -1,0 +1,74 @@
+[
+ {
+  "file": "assets/singer-sewing-machine-detail1.jpg",
+  "media": "image",
+  "ref": "openverse:39126071-7d86-4db3-a9f4-455478fca4cc",
+  "title": "Singer sewing machine detail1",
+  "creator": "Vincent de Groot - http://www.videgro.net",
+  "creatorUrl": "https://commons.wikimedia.org/wiki/User:Vdegroot",
+  "date": null,
+  "license": "CC BY-SA 4.0",
+  "licenseCode": "by-sa",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "creditRequired": true,
+  "page": "https://commons.wikimedia.org/w/index.php?curid=684794",
+  "via": "Wikimedia Commons",
+  "image": "https://upload.wikimedia.org/wikipedia/commons/e/e8/Singer_sewing_machine_detail1.jpg",
+  "width": 1792,
+  "height": 1528,
+  "bytes": 443118,
+  "credit": "\"Singer sewing machine detail1\" by Vincent de Groot - http://www.videgro.net, CC BY-SA 4.0, via Wikimedia Commons",
+  "notes": [
+   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
+  ],
+  "saved": "2026-11-04T15:27:36.414Z"
+ },
+ {
+  "file": "assets/two-threads-threaded-sewing-machine.jpg",
+  "media": "image",
+  "ref": "openverse:60a3b006-d796-4f4c-ae58-a74a6d407fc5",
+  "title": "Two threads threaded sewing machine",
+  "creator": "Wolfgang Lonien",
+  "creatorUrl": null,
+  "date": null,
+  "license": "CC BY-SA 2.0",
+  "licenseCode": "by-sa",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+  "creditRequired": true,
+  "page": "https://commons.wikimedia.org/w/index.php?curid=22767033",
+  "via": "Wikimedia Commons",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Two_threads_threaded_sewing_machine.jpg/1920px-Two_threads_threaded_sewing_machine.jpg",
+  "width": 1920,
+  "height": 1440,
+  "bytes": 251985,
+  "credit": "\"Two threads threaded sewing machine\" by Wolfgang Lonien, CC BY-SA 2.0, via Wikimedia Commons",
+  "notes": [
+   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
+  ],
+  "saved": "2026-11-04T15:27:42.545Z"
+ },
+ {
+  "file": "assets/woman-sewing-a-face-mask-with-a.jpg",
+  "media": "image",
+  "ref": "commons:88752360",
+  "title": "Woman sewing a face mask with a Singer machine 09",
+  "creator": "Tadeáš Bednarz",
+  "creatorUrl": null,
+  "date": "2020-03-21",
+  "license": "CC BY-SA 4.0",
+  "licenseCode": "by-sa",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "creditRequired": true,
+  "page": "https://commons.wikimedia.org/wiki/File:Woman_sewing_a_face_mask_with_a_Singer_machine_09.jpg",
+  "via": "Wikimedia Commons",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Woman_sewing_a_face_mask_with_a_Singer_machine_09.jpg/1920px-Woman_sewing_a_face_mask_with_a_Singer_machine_09.jpg",
+  "width": 1920,
+  "height": 1280,
+  "bytes": 210459,
+  "credit": "\"Woman sewing a face mask with a Singer machine 09\" by Tadeáš Bednarz, CC BY-SA 4.0, via Wikimedia Commons",
+  "notes": [
+   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
+  ],
+  "saved": "2026-11-04T15:27:42.834Z"
+ }
+]
