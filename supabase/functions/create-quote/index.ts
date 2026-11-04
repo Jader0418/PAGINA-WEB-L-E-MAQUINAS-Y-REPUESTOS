@@ -381,6 +381,13 @@ Deno.serve(async (request: Request) => {
   const clientIp = getClientIp(request);
   const userAgent = normalizeText(request.headers.get("user-agent"), 500);
   const policyVersion = Deno.env.get("PRIVACY_POLICY_VERSION") || "v1.0-borrador";
+  const clientPolicyVersion = normalizeText(payload.policyVersion, 80);
+  if (!clientPolicyVersion || clientPolicyVersion !== policyVersion) {
+    return jsonResponse({
+      error: "La versión de la política no coincide. Actualiza la página antes de enviar la cotización.",
+      code: "POLICY_VERSION_MISMATCH",
+    }, 409, origin);
+  }
   const dataConsent = { accepted: true };
   const marketingConsent = { accepted: validated.marketingConsent };
 
