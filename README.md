@@ -128,7 +128,7 @@ La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge
 4. El consecutivo se genera de forma transaccional por año: `COT-AAAA-0001`.
 5. Se guarda evidencia separada de autorización para gestionar la cotización y de autorización opcional de mercadeo.
 6. El servidor genera el PDF, intenta almacenarlo en el bucket privado `quote-pdfs` y crea un enlace firmado de duración limitada.
-7. Resend envía el PDF al cliente y una notificación independiente al correo comercial de L&E.
+7. Resend envía el PDF al correo que escribió el cliente en el formulario y una notificación independiente a `lyemaquinasyrepuestos@gmail.com`. Ambos mensajes incluyen consecutivo, cliente, datos del producto, cantidades y valores; el PDF adjunto incluye además la descripción y ficha técnica disponible en el catálogo.
 8. La base de datos conserva el estado de generación y entrega de correo.
 
 ### Archivos principales del backend
@@ -202,15 +202,15 @@ npx supabase db push
 npx supabase functions deploy create-quote
 ```
 
-Configura las variables de producción desde **Supabase Dashboard → Edge Functions → Secrets**. Los nombres requeridos son:
+Configura las variables de producción desde **Supabase Dashboard → Edge Functions → Secrets**. El destinatario comercial predeterminado ya está definido como `lyemaquinasyrepuestos@gmail.com`; solo se necesita `QUOTE_NOTIFICATION_EMAIL` si se desea reemplazarlo. Los nombres que debes configurar son:
 
-- `ALLOWED_ORIGINS`: por ejemplo `https://jader0418.github.io`.
+- `ALLOWED_ORIGINS`: `https://jader0418.github.io` (el código ya incluye este origen como valor predeterminado, salvo que se establezca otro en Secrets).
 - `PRIVACY_POLICY_APPROVED`: debe permanecer `false` hasta que la empresa apruebe y publique la política definitiva.
 - `PRIVACY_POLICY_VERSION`: versión real de la política publicada.
 - `RESEND_API_KEY`: clave secreta de Resend.
 - `RESEND_FROM_EMAIL`: remitente de un dominio verificado en Resend.
-- `QUOTE_NOTIFICATION_EMAIL`: correo comercial que recibirá las nuevas solicitudes.
-- `QUOTE_REPLY_TO`: correo al que responderán los clientes.
+- `QUOTE_NOTIFICATION_EMAIL`: opcional; por defecto `lyemaquinasyrepuestos@gmail.com`.
+- `QUOTE_REPLY_TO`: `lyemaquinasyrepuestos@gmail.com`, para que las respuestas del cliente lleguen a L&E.
 
 Supabase proporciona las variables y claves propias del proyecto en el entorno de las Edge Functions. No intentes guardar claves reservadas `SUPABASE_*` como secretos personalizados si la plataforma ya las inyecta.
 
@@ -251,7 +251,7 @@ La clave publicable puede estar en el navegador con RLS y la función correctame
 ### Pendiente antes de activar solicitudes reales
 
 - Confirmar que la integración GitHub–Supabase tiene habilitado **Deploy to production** y que `create-quote` aparece en Edge Functions.
-- Configurar los secretos de producción para la función.
+- Configurar `RESEND_API_KEY` y `RESEND_FROM_EMAIL` de un dominio verificado en Resend; el correo receptor de L&E ya tiene valor predeterminado.
 - Verificar un dominio de envío en Resend.
 - Completar `config.js` con la URL y clave publicable cuando la Edge Function esté desplegada y probada.
 - Aprobar y publicar la Política de Tratamiento de Datos, completar los datos legales de la empresa y fijar la versión definitiva. La Edge Function rechaza solicitudes mientras `PRIVACY_POLICY_APPROVED` no esté en `true`.
