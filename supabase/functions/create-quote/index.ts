@@ -236,9 +236,14 @@ async function buildQuotePdf(quote: Record<string, any>): Promise<Uint8Array> {
   let subtotal = 0;
   for (let index = 0; index < quote.items.length; index++) {
     const item = quote.items[index];
-    const base = (index + 1) + ". " + item.name + " | Marca: " + (item.brand || "Por confirmar") +
+    const base = (index + 1) + ". " + item.name + " | Categoría: " + (item.category || "Por confirmar") +
+      " | Marca: " + (item.brand || "Por confirmar") +
       " | Ref.: " + (item.model || "Por confirmar") + " | Cantidad: " + item.quantity;
     drawLine(base, { size: 9, font: bold, gap: 13 });
+    if (item.description) drawLine("Descripción: " + item.description, { size: 8, gap: 12 });
+    for (const specLine of getTechnicalSpecLines(item.specs)) {
+      drawLine("  - " + specLine, { size: 8, gap: 12 });
+    }
     if (item.unitPrice === null || item.unitPrice === undefined) {
       allPriced = false;
       drawLine("Precio unitario: Por confirmar con asesor.", { size: 9, color: rgb(0.35, 0.4, 0.48) });
@@ -246,9 +251,11 @@ async function buildQuotePdf(quote: Record<string, any>): Promise<Uint8Array> {
       const price = Number(item.unitPrice);
       const lineTotal = price * Number(item.quantity);
       subtotal += lineTotal;
-      drawLine("Precio unitario: " + formatCOP(price) + " | Total línea: " + formatCOP(lineTotal), {
-        size: 9, color: rgb(0.35, 0.4, 0.48),
-      });
+      const priceDetail = "Precio unitario: " + formatCOP(price) +
+        (item.oldUnitPrice != null ? " | Precio anterior: " + formatCOP(Number(item.oldUnitPrice)) : "") +
+        (item.discountPercent ? " | Descuento: " + item.discountPercent + "%" : "") +
+        " | Total línea: " + formatCOP(lineTotal);
+      drawLine(priceDetail, { size: 9, color: rgb(0.35, 0.4, 0.48) });
     }
     y -= 3;
   }
@@ -280,6 +287,51 @@ function formatCOP(value: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency", currency: "COP", maximumFractionDigits: 0,
   }).format(value);
+}
+
+function getTechnicalSpecLines(specs: unknown): string[] {
+  if (!specs || typeof specs !== "object" || Array.isArray(specs)) return [];
+  return Object.entries(specs as Record<string, unknown>)
+    .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "")
+    .map(([key, value]) => key + ": " + (
+      typeof value === "string" ? value : JSON.stringify(value)
+    ));
+}
+
+function formatItemText(item: Record<string, any>): string {
+  const details = [
+    item.name,
+    "Categoría: " + (item.category || "Por confirmar"),
+    "Marca: " + (item.brand || "Por confirmar"),
+    "Modelo / referencia: " + (item.model || "Por confirmar"),
+    "Cantidad: " + item.quantity,
+  ];
+  if (item.description) details.push("Descripción: " + item.description);
+  details.push(...getTechnicalSpecLines(item.specs).map((line) => "  - " + line));
+  details.push(
+    "Precio unitario: " + (item.unitPrice == null ? "Por confirmar" : formatCOP(Number(item.unitPrice))),
+    "Descuento: " + (item.discountPercent ? item.discountPercent + "%" : "No registrado"),
+    "Total de línea: " + (item.lineTotal == null ? "Por confirmar" : formatCOP(Number(item.lineTotal))),
+  );
+  return details.join("\n");
+}
+
+function formatItemHtml(item: Record<string, any>): string {
+  const specs = getTechnicalSpecLines(item.specs);
+  const specHtml = specs.length
+    ? "<ul>" + specs.map((line) => "<li>" + escapeHtml(line) + "</li>").join("") + "</ul>"
+    : "<p><em>Ficha técnica pendiente de completar en el catálogo.</em></p>";
+  return "<li><strong>" + escapeHtml(item.name) + "</strong>" +
+    "<br>Categoría: " + escapeHtml(item.category || "Por confirmar") +
+    " | Marca: " + escapeHtml(item.brand || "Por confirmar") +
+    " | Modelo: " + escapeHtml(item.model || "Por confirmar") +
+    " | Cantidad: " + escapeHtml(item.quantity) +
+    (item.description ? "<p>" + escapeHtml(item.description) + "</p>" : "") +
+    specHtml +
+    "<p>Precio unitario: " + escapeHtml(item.unitPrice == null ? "Por confirmar" : formatCOP(Number(item.unitPrice))) +
+    " | Descuento: " + escapeHtml(item.discountPercent ? item.discountPercent + "%" : "No registrado") +
+    " | Total línea: " + escapeHtml(item.lineTotal == null ? "Por confirmar" : formatCOP(Number(item.lineTotal))) +
+    "</p></li>";
 }
 
 function base64(bytes: Uint8Array): string {
@@ -457,6 +509,31 @@ Deno.serve(async (request: Request) => {
     }, 201, origin);
   }
 
+  // Completa la cotización con la descripción y ficha técnica actuales del catálogo maestro.
+  // Los datos no enviados por el catálogo se muestran como pendientes; nunca se inventan.
+  const requestedSlugs = quoteData.items.map((item: Record<string, any>) => item.productId);
+  if (requestedSlugs.length) {
+    const { data: catalogDetails, error: catalogDetailsError } = await supabase
+      .from("catalog_products")
+      .select("slug, description, technical_specs")
+      .in("slug", requestedSlugs);
+    if (catalogDetailsError) {
+      console.error("Catalog technical details lookup failed:", catalogDetailsError.message);
+    } else {
+      const detailsBySlug = new Map(
+        (catalogDetails || []).map((product: Record<string, any>) => [product.slug, product])
+      );
+      quoteData.items = quoteData.items.map((item: Record<string, any>) => {
+        const details = detailsBySlug.get(item.productId) as Record<string, any> | undefined;
+        return {
+          ...item,
+          description: details?.description || "",
+          specs: details?.technical_specs || {},
+        };
+      });
+    }
+  }
+
   const filename = quoteData.quoteNumber + ".pdf";
   const year = new Date(quoteData.createdAt).toLocaleDateString("en-CA", { timeZone: "America/Bogota" }).slice(0, 4);
   const storagePath = year + "/" + filename;
@@ -489,7 +566,7 @@ Deno.serve(async (request: Request) => {
 
   const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
   const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "";
-  const businessEmail = Deno.env.get("QUOTE_NOTIFICATION_EMAIL") || "";
+  const businessEmail = Deno.env.get("QUOTE_NOTIFICATION_EMAIL") || "lyemaquinasyrepuestos@gmail.com";
   const replyTo = Deno.env.get("QUOTE_REPLY_TO") || "";
   let emailStatus = "not_configured";
   let customerEmailSent = false;
@@ -502,11 +579,18 @@ Deno.serve(async (request: Request) => {
     customerEmailSent = Boolean(quoteData.customerEmailSentAt);
     businessEmailSent = Boolean(quoteData.businessEmailSentAt);
     const customer = quoteData.customer;
-    const itemLines = quoteData.items.map((item: Record<string, unknown>) =>
-      "<li>" + escapeHtml(item.name) + " - cantidad: " + escapeHtml(item.quantity) + "</li>"
-    ).join("");
     const safeName = escapeHtml(customer.firstName);
     const safeLastName = escapeHtml(customer.lastName);
+    const itemHtml = quoteData.items.map((item: Record<string, any>) => formatItemHtml(item)).join("");
+    const itemText = quoteData.items.map((item: Record<string, any>, index: number) =>
+      (index + 1) + ". " + formatItemText(item)
+    ).join("\n\n");
+    const totalText = quoteData.subtotal == null
+      ? "Pendiente de confirmación comercial"
+      : formatCOP(Number(quoteData.subtotal));
+    const issuedAt = new Date(quoteData.createdAt).toLocaleString("es-CO", {
+      timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short",
+    });
     if (!customerEmailSent) {
     const customerEmail = await sendResendEmail({
       apiKey: resendApiKey,
@@ -514,11 +598,14 @@ Deno.serve(async (request: Request) => {
       to: customer.email,
       replyTo: replyTo || businessEmail,
       subject: "Tu cotización " + quoteNumber + " - L&E Máquinas y Repuestos",
-      html: "<p>Hola " + safeName + ",</p><p>Recibimos tu solicitud de cotización <strong>" + quoteNumber +
-        "</strong>. Adjuntamos el documento para que puedas consultarlo.</p><ul>" + itemLines +
-        "</ul><p>Un asesor de L&E validará las especificaciones, precios y disponibilidad cuando corresponda.</p><p>WhatsApp: +57 350 521 8141</p>",
-      text: "Hola " + safeName + ". Adjuntamos tu solicitud de cotización " + quoteNumber +
-        ". Un asesor de L&E validará precios y disponibilidad. WhatsApp +57 350 521 8141.",
+      html: "<h2>¡Gracias por cotizar con L&E!</h2><p>Hola " + safeName +
+        ", recibimos tu solicitud <strong>" + quoteNumber + "</strong> del " + escapeHtml(issuedAt) +
+        ".</p><p>Adjuntamos el PDF con los productos, cantidades y valores registrados. Un asesor confirmará disponibilidad, especificaciones finales y condiciones comerciales.</p><ul>" +
+        itemHtml + "</ul><p><strong>Subtotal registrado:</strong> " + escapeHtml(totalText) +
+        "</p><p>WhatsApp: +57 350 521 8141</p>",
+      text: "Hola " + customer.firstName + ". Tu cotización " + quoteNumber + " fue recibida el " +
+        issuedAt + ".\n\n" + itemText + "\n\nSubtotal: " + totalText +
+        ". Adjuntamos el PDF. L&E confirmará disponibilidad y condiciones. WhatsApp +57 350 521 8141.",
       attachmentBase64: attachment,
       filename,
       idempotencyKey: quoteNumber + "-customer",
@@ -533,13 +620,23 @@ Deno.serve(async (request: Request) => {
       from: fromEmail,
       to: businessEmail,
       replyTo: customer.email,
-      subject: "Nueva solicitud " + quoteNumber + " - " + customer.firstName + " " + customer.lastName,
-      html: "<h2>Nueva solicitud de cotización</h2><p><strong>Consecutivo:</strong> " + quoteNumber +
-        "</p><p><strong>Cliente:</strong> " + safeName + " " + safeLastName +
-        "</p><p><strong>Correo:</strong> " + escapeHtml(customer.email) + "</p><p><strong>Celular:</strong> " + escapeHtml(customer.phone) +
-        "</p><p><strong>Ciudad:</strong> " + escapeHtml(customer.city) + "</p><ul>" + itemLines + "</ul><p>Se adjunta PDF.</p>",
-      text: "Nueva solicitud " + quoteNumber + " de " + customer.firstName + " " + customer.lastName +
-        ". Correo: " + customer.email + ". Celular: " + customer.phone + ".",
+      subject: "Nueva cotización " + quoteNumber + " - " + customer.firstName + " " + customer.lastName,
+      html: "<h2>Nueva cotización recibida por L&E</h2><p><strong>Consecutivo:</strong> " + quoteNumber +
+        "</p><p><strong>Fecha:</strong> " + escapeHtml(issuedAt) +
+        "</p><h3>Datos del cliente</h3><p><strong>Nombre:</strong> " + safeName + " " + safeLastName +
+        "</p><p><strong>Correo:</strong> " + escapeHtml(customer.email) +
+        "</p><p><strong>Celular:</strong> " + escapeHtml(customer.phone) +
+        "</p><p><strong>Dirección:</strong> " + escapeHtml(customer.address) +
+        "</p><p><strong>Ciudad / municipio:</strong> " + escapeHtml(customer.city) +
+        "</p><h3>Máquinas y productos solicitados</h3><ol>" + itemHtml +
+        "</ol><p><strong>Subtotal registrado:</strong> " + escapeHtml(totalText) +
+        "</p><p>Se adjunta el PDF completo. Puedes responder directamente a este correo para contactar al cliente.</p>",
+      text: "Nueva cotización " + quoteNumber + " recibida el " + issuedAt +
+        ".\n\nCLIENTE\nNombre: " + customer.firstName + " " + customer.lastName +
+        "\nCorreo: " + customer.email + "\nCelular: " + customer.phone +
+        "\nDirección: " + customer.address + "\nCiudad: " + customer.city +
+        "\n\nPRODUCTOS\n" + itemText + "\n\nSubtotal registrado: " + totalText +
+        "\n\nPDF adjunto.",
       attachmentBase64: attachment,
       filename,
       idempotencyKey: quoteNumber + "-business",
