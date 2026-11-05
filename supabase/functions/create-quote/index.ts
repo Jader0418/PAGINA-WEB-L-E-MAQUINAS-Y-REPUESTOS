@@ -343,9 +343,56 @@ function base64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-async function sendResendEmail(args: {
-  apiKey: string;
-  from: string;
+let cachedGmailToken: { value: string; expiresAt: number } | null = null;
+
+async function getGmailAccessToken(): Promise<string> {
+  if (cachedGmailToken && cachedGmailToken.expiresAt > Date.now() + 60_000) {
+    return cachedGmailToken.value;
+  }
+  const clientId = Deno.env.get("GMAIL_CLIENT_ID") || "";
+  const clientSecret = Deno.env.get("GMAIL_CLIENT_SECRET") || "";
+  const refreshToken = Deno.env.get("GMAIL_REFRESH_TOKEN") || "";
+  if (!clientId || !clientSecret || !refreshToken) throw new Error("GMAIL_OAUTH_NOT_CONFIGURED");
+
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || typeof result.access_token !== "string") {
+    console.error("Gmail OAuth token refresh failed:", response.status, result?.error || "oauth_error");
+    cachedGmailToken = null;
+    throw new Error("GMAIL_OAUTH_REFRESH_FAILED");
+  }
+  cachedGmailToken = {
+    value: result.access_token,
+    expiresAt: Date.now() + (Number(result.expires_in) || 3600) * 1000,
+  };
+  return result.access_token;
+}
+
+function base64UrlUtf8(value: string): string {
+  return base64(new TextEncoder().encode(value))
+    .replace(/\\+/g, "-")
+    .replace(/\\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function wrapBase64(value: string): string {
+  return value.match(/.{1,76}/g)?.join("\\r\\n") || "";
+}
+
+function encodeMimeHeader(value: string): string {
+  return "=?UTF-8?B?" + base64(new TextEncoder().encode(value)) + "?=";
+}
+
+async function sendGmailEmail(args: {
   to: string;
   replyTo?: string;
   subject: string;
@@ -353,35 +400,70 @@ async function sendResendEmail(args: {
   text: string;
   attachmentBase64: string;
   filename: string;
-  idempotencyKey: string;
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer " + args.apiKey,
-      "Content-Type": "application/json",
-      "Idempotency-Key": args.idempotencyKey,
-    },
-    body: JSON.stringify({
-      from: args.from,
-      to: [args.to],
-      ...(args.replyTo ? { reply_to: args.replyTo } : {}),
-      subject: args.subject,
-      html: args.html,
-      text: args.text,
-      attachments: [{
-        filename: args.filename,
-        content: args.attachmentBase64,
-      }],
-    }),
-  });
+  try {
+    const accessToken = await getGmailAccessToken();
+    const sender = Deno.env.get("GMAIL_SENDER_EMAIL") || "lyemaquinasyrepuestos@gmail.com";
+    const mixedBoundary = "=_LE_MIXED_" + crypto.randomUUID();
+    const alternativeBoundary = "=_LE_ALT_" + crypto.randomUUID();
+    const safeFilename = args.filename.replace(/[\\r\\n"\\\\]/g, "_");
+    const to = args.to.replace(/[\\r\\n]/g, "");
+    const replyTo = (args.replyTo || "").replace(/[\\r\\n]/g, "");
+    const subject = encodeMimeHeader(args.subject);
+    const plainPart = wrapBase64(base64(new TextEncoder().encode(args.text)));
+    const htmlPart = wrapBase64(base64(new TextEncoder().encode(args.html)));
+    const attachmentPart = wrapBase64(args.attachmentBase64);
 
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    console.error("Resend rejected email:", response.status, result?.name || result?.message || "provider_error");
-    return { ok: false, error: "El proveedor de correo no confirmó el envío." };
+    const mimeMessage = [
+      "From: L&E Máquinas y Repuestos <" + sender + ">",
+      "To: " + to,
+      ...(replyTo ? ["Reply-To: " + replyTo] : []),
+      "Subject: " + subject,
+      "MIME-Version: 1.0",
+      'Content-Type: multipart/mixed; boundary="' + mixedBoundary + '"',
+      "",
+      "--" + mixedBoundary,
+      'Content-Type: multipart/alternative; boundary="' + alternativeBoundary + '"',
+      "",
+      "--" + alternativeBoundary,
+      'Content-Type: text/plain; charset="UTF-8"',
+      "Content-Transfer-Encoding: base64",
+      "",
+      plainPart,
+      "--" + alternativeBoundary,
+      'Content-Type: text/html; charset="UTF-8"',
+      "Content-Transfer-Encoding: base64",
+      "",
+      htmlPart,
+      "--" + alternativeBoundary + "--",
+      "--" + mixedBoundary,
+      'Content-Type: application/pdf; name="' + safeFilename + '"',
+      "Content-Transfer-Encoding: base64",
+      'Content-Disposition: attachment; filename="' + safeFilename + '"',
+      "",
+      attachmentPart,
+      "--" + mixedBoundary + "--",
+      "",
+    ].join("\\r\\n");
+
+    const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ raw: base64UrlUtf8(mimeMessage) }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.error("Gmail API rejected email:", response.status, result?.error?.status || result?.error?.message || "gmail_api_error");
+      return { ok: false, error: "Gmail no confirmó el envío del correo." };
+    }
+    return { ok: true, id: result.id };
+  } catch (error) {
+    console.error("Gmail email delivery failed:", error instanceof Error ? error.message : "unknown_error");
+    return { ok: false, error: "No fue posible enviar el correo mediante Gmail." };
   }
-  return { ok: true, id: result.id };
 }
 
 Deno.serve(async (request: Request) => {
@@ -564,16 +646,19 @@ Deno.serve(async (request: Request) => {
     console.error("Quote PDF signed URL failed:", signed.error.message);
   }
 
-  const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
-  const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "";
   const businessEmail = Deno.env.get("QUOTE_NOTIFICATION_EMAIL") || "lyemaquinasyrepuestos@gmail.com";
-  const replyTo = Deno.env.get("QUOTE_REPLY_TO") || "";
+  const businessReplyTo = Deno.env.get("QUOTE_REPLY_TO") || businessEmail;
+  const gmailConfigured = Boolean(
+    Deno.env.get("GMAIL_CLIENT_ID") &&
+    Deno.env.get("GMAIL_CLIENT_SECRET") &&
+    Deno.env.get("GMAIL_REFRESH_TOKEN")
+  );
   let emailStatus = "not_configured";
   let customerEmailSent = false;
   let businessEmailSent = false;
   const emailErrors: string[] = [];
 
-  if (resendApiKey && fromEmail && businessEmail) {
+  if (gmailConfigured && businessEmail) {
     const attachment = base64(pdfBytes);
     const quoteNumber = quoteData.quoteNumber;
     customerEmailSent = Boolean(quoteData.customerEmailSentAt);
@@ -592,11 +677,9 @@ Deno.serve(async (request: Request) => {
       timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short",
     });
     if (!customerEmailSent) {
-    const customerEmail = await sendResendEmail({
-      apiKey: resendApiKey,
-      from: fromEmail,
+    const customerEmail = await sendGmailEmail({
       to: customer.email,
-      replyTo: replyTo || businessEmail,
+      replyTo: businessReplyTo,
       subject: "Tu cotización " + quoteNumber + " - L&E Máquinas y Repuestos",
       html: "<h2>¡Gracias por cotizar con L&E!</h2><p>Hola " + safeName +
         ", recibimos tu solicitud <strong>" + quoteNumber + "</strong> del " + escapeHtml(issuedAt) +
@@ -608,16 +691,13 @@ Deno.serve(async (request: Request) => {
         ". Adjuntamos el PDF. L&E confirmará disponibilidad y condiciones. WhatsApp +57 350 521 8141.",
       attachmentBase64: attachment,
       filename,
-      idempotencyKey: quoteNumber + "-customer",
     });
     customerEmailSent = customerEmail.ok;
     if (!customerEmail.ok) emailErrors.push("customer");
     }
 
     if (!businessEmailSent) {
-    const businessEmailResult = await sendResendEmail({
-      apiKey: resendApiKey,
-      from: fromEmail,
+    const businessEmailResult = await sendGmailEmail({
       to: businessEmail,
       replyTo: customer.email,
       subject: "Nueva cotización " + quoteNumber + " - " + customer.firstName + " " + customer.lastName,
@@ -639,7 +719,6 @@ Deno.serve(async (request: Request) => {
         "\n\nPDF adjunto.",
       attachmentBase64: attachment,
       filename,
-      idempotencyKey: quoteNumber + "-business",
     });
     businessEmailSent = businessEmailResult.ok;
     if (!businessEmailResult.ok) emailErrors.push("business");
