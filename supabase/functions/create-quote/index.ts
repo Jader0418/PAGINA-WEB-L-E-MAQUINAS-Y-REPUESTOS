@@ -379,13 +379,13 @@ async function getGmailAccessToken(): Promise<string> {
 
 function base64UrlUtf8(value: string): string {
   return base64(new TextEncoder().encode(value))
-    .replace(/\\+/g, "-")
-    .replace(/\\//g, "_")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
     .replace(/=+$/g, "");
 }
 
 function wrapBase64(value: string): string {
-  return value.match(/.{1,76}/g)?.join("\\r\\n") || "";
+  return value.match(/.{1,76}/g)?.join("\r\n") || "";
 }
 
 function encodeMimeHeader(value: string): string {
@@ -406,16 +406,16 @@ async function sendGmailEmail(args: {
     const sender = Deno.env.get("GMAIL_SENDER_EMAIL") || "lyemaquinasyrepuestos@gmail.com";
     const mixedBoundary = "=_LE_MIXED_" + crypto.randomUUID();
     const alternativeBoundary = "=_LE_ALT_" + crypto.randomUUID();
-    const safeFilename = args.filename.replace(/[\\r\\n"\\\\]/g, "_");
-    const to = args.to.replace(/[\\r\\n]/g, "");
-    const replyTo = (args.replyTo || "").replace(/[\\r\\n]/g, "");
+    const safeFilename = args.filename.replace(/[\r\n"\\]/g, "_");
+    const to = args.to.replace(/[\r\n]/g, "");
+    const replyTo = (args.replyTo || "").replace(/[\r\n]/g, "");
     const subject = encodeMimeHeader(args.subject);
     const plainPart = wrapBase64(base64(new TextEncoder().encode(args.text)));
     const htmlPart = wrapBase64(base64(new TextEncoder().encode(args.html)));
     const attachmentPart = wrapBase64(args.attachmentBase64);
 
     const mimeMessage = [
-      "From: L&E Máquinas y Repuestos <" + sender + ">",
+      "From: " + encodeMimeHeader("L&E Máquinas y Repuestos") + " <" + sender + ">",
       "To: " + to,
       ...(replyTo ? ["Reply-To: " + replyTo] : []),
       "Subject: " + subject,
@@ -444,7 +444,7 @@ async function sendGmailEmail(args: {
       attachmentPart,
       "--" + mixedBoundary + "--",
       "",
-    ].join("\\r\\n");
+    ].join("\r\n");
 
     const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
       method: "POST",
