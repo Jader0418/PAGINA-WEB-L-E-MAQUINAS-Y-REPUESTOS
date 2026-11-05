@@ -116,7 +116,7 @@ Para activar la publicación por primera vez:
 
 ## Sistema de cotizaciones: backend
 
-La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge Functions y Storage privado)** y **Resend** para correo transaccional.
+La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge Functions y Storage privado)** y **Gmail API** (OAuth 2.0) para correo transaccional.
 
 **Estado de conexión (4 de noviembre de 2026):** el proyecto principal de Supabase `LE-MAQUINAS-REPUESTOS` está activo en `sa-east-1` (São Paulo). La migración de cotizaciones está aplicada y coincide con el archivo versionado en `supabase/migrations/20261104182721_create_quotes_system.sql`. Las siete tablas, ocho marcas de demostración y el bucket privado `quote-pdfs` existen. Se verificó que `anon` y `authenticated` no pueden leer los datos personales ni ejecutar la función RPC. La Edge Function `create-quote` ya está desplegada y activa en Supabase. GitHub Pages también quedó habilitado y la publicación del sitio terminó correctamente en el workflow #20. Aún faltan configurar el origen permitido y los secretos de correo, aprobar la política definitiva, cargar el catálogo real y activar `config.js`; por seguridad, el formulario sigue en modo demostración.
 
@@ -128,7 +128,7 @@ La integración de cotizaciones está preparada con **Supabase (PostgreSQL, Edge
 4. El consecutivo se genera de forma transaccional por año: `COT-AAAA-0001`.
 5. Se guarda evidencia separada de autorización para gestionar la cotización y de autorización opcional de mercadeo.
 6. El servidor genera el PDF, intenta almacenarlo en el bucket privado `quote-pdfs` y crea un enlace firmado de duración limitada.
-7. Resend envía el PDF al correo que escribió el cliente en el formulario y una notificación independiente a `lyemaquinasyrepuestos@gmail.com`. Ambos mensajes incluyen consecutivo, cliente, datos del producto, cantidades y valores; el PDF adjunto incluye además la descripción y ficha técnica disponible en el catálogo.
+7. Gmail API envía el PDF al correo que escribió el cliente en el formulario y una notificación independiente a `lyemaquinasyrepuestos@gmail.com`, desde la cuenta Gmail de L&E. Ambos mensajes incluyen consecutivo, cliente, datos del producto, cantidades y valores; el PDF adjunto incluye además la descripción y ficha técnica disponible en el catálogo.
 8. La base de datos conserva el estado de generación y entrega de correo.
 
 ### Archivos principales del backend
@@ -202,13 +202,15 @@ npx supabase db push
 npx supabase functions deploy create-quote
 ```
 
-Configura las variables de producción desde **Supabase Dashboard → Edge Functions → Secrets**. El destinatario comercial predeterminado ya está definido como `lyemaquinasyrepuestos@gmail.com`; solo se necesita `QUOTE_NOTIFICATION_EMAIL` si se desea reemplazarlo. Los nombres que debes configurar son:
+Configura las variables de producción desde **Supabase Dashboard → Edge Functions → Secrets**. El destinatario comercial predeterminado ya está definido como `lyemaquinasyrepuestos@gmail.com`; solo se necesita `QUOTE_NOTIFICATION_EMAIL` si se desea reemplazarlo. Los secretos de Google OAuth son:
 
 - `ALLOWED_ORIGINS`: `https://jader0418.github.io` (el código ya incluye este origen como valor predeterminado, salvo que se establezca otro en Secrets).
 - `PRIVACY_POLICY_APPROVED`: debe permanecer `false` hasta que la empresa apruebe y publique la política definitiva.
 - `PRIVACY_POLICY_VERSION`: versión real de la política publicada.
-- `RESEND_API_KEY`: clave secreta de Resend.
-- `RESEND_FROM_EMAIL`: remitente de un dominio verificado en Resend.
+- `GMAIL_CLIENT_ID`: ID del cliente OAuth de Google Cloud.
+- `GMAIL_CLIENT_SECRET`: secreto del cliente OAuth de Google Cloud.
+- `GMAIL_REFRESH_TOKEN`: token de actualización autorizado por la cuenta Gmail de L&E.
+- `GMAIL_SENDER_EMAIL`: `lyemaquinasyrepuestos@gmail.com`.
 - `QUOTE_NOTIFICATION_EMAIL`: opcional; por defecto `lyemaquinasyrepuestos@gmail.com`.
 - `QUOTE_REPLY_TO`: `lyemaquinasyrepuestos@gmail.com`, para que las respuestas del cliente lleguen a L&E.
 
@@ -227,13 +229,19 @@ window.LE_CONFIG = {
 
 La clave publicable puede estar en el navegador con RLS y la función correctamente configurados. **Nunca** coloques `service_role`, `secret key` o `RESEND_API_KEY` en `config.js`.
 
-### Preparación de Resend
+### Preparación de Gmail API (una sola vez)
 
-1. Crea una cuenta en [Resend](https://resend.com/).
-2. Verifica el dominio desde el que L&E enviará los mensajes.
-3. Crea una API key y guárdala únicamente como secreto `RESEND_API_KEY` en Supabase.
-4. Configura `RESEND_FROM_EMAIL`, `QUOTE_NOTIFICATION_EMAIL` y `QUOTE_REPLY_TO`.
-5. Realiza pruebas con una dirección autorizada antes de activar el envío a clientes.
+1. Entra a [Google Cloud Console](https://console.cloud.google.com/) con la cuenta `lyemaquinasyrepuestos@gmail.com`, crea un proyecto y habilita **Gmail API**.
+2. Configura la pantalla de consentimiento OAuth. Para una cuenta Gmail personal el tipo de usuario suele ser **External**. Añade `lyemaquinasyrepuestos@gmail.com` como usuario de prueba mientras haces la configuración inicial.
+3. Crea un OAuth Client ID. Para generar el token con OAuth 2.0 Playground, utiliza un cliente de tipo **Web application** y registra como URI de redirección autorizada exactamente `https://developers.google.com/oauthplayground`.
+4. Abre [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/), entra en la configuración (icono de engranaje), activa **Use your own OAuth credentials** y pega el Client ID y Client Secret.
+5. En el paso 1 introduce únicamente el alcance `https://www.googleapis.com/auth/gmail.send`, autoriza la cuenta de L&E y concede el permiso.
+6. En el paso 2 intercambia el código por tokens y copia el **Refresh token**. No compartas ese valor por chat ni lo guardes en GitHub.
+7. En **Supabase Dashboard → Edge Functions → Secrets** registra `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` y `GMAIL_SENDER_EMAIL=lyemaquinasyrepuestos@gmail.com`. No es necesario desplegar de nuevo la función después de guardar Secrets.
+
+**Importante sobre el modo de publicación OAuth:** mientras el consentimiento OAuth externo esté en estado **Testing**, Google limita la duración del refresh token a 7 días para este tipo de alcance. Para un uso estable se debe revisar la publicación en **Production** y los requisitos de verificación que Google aplique al alcance sensible `gmail.send`. Google puede mostrar una advertencia de aplicación no verificada o exigir verificación antes de habilitar el uso general. No se debe ignorar ese requisito ni asumir que un token de prueba es permanente.
+
+El servidor solo solicita el alcance `gmail.send`; no necesita leer la bandeja de entrada.
 
 ### Controles y límites actuales
 
@@ -251,7 +259,7 @@ La clave publicable puede estar en el navegador con RLS y la función correctame
 ### Pendiente antes de activar solicitudes reales
 
 - Confirmar que la integración GitHub–Supabase tiene habilitado **Deploy to production** y que `create-quote` aparece en Edge Functions.
-- Configurar `RESEND_API_KEY` y `RESEND_FROM_EMAIL` de un dominio verificado en Resend; el correo receptor de L&E ya tiene valor predeterminado.
+- Crear el cliente OAuth de Google, autorizar la cuenta de L&E y guardar los tres secretos OAuth en Supabase.
 - Verificar un dominio de envío en Resend.
 - Completar `config.js` con la URL y clave publicable cuando la Edge Function esté desplegada y probada.
 - Aprobar y publicar la Política de Tratamiento de Datos, completar los datos legales de la empresa y fijar la versión definitiva. La Edge Function rechaza solicitudes mientras `PRIVACY_POLICY_APPROVED` no esté en `true`.
