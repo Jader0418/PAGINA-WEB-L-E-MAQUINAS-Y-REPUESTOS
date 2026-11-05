@@ -386,7 +386,7 @@ async function sendResendEmail(args: {
 
 Deno.serve(async (request: Request) => {
   const origin = request.headers.get("origin");
-  const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "http://localhost:5500,http://127.0.0.1:5500")
+  const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "http://localhost:5500,http://127.0.0.1:5500,https://jader0418.github.io")
     .split(",").map((value) => value.trim()).filter(Boolean);
 
   if (request.method === "OPTIONS") {
