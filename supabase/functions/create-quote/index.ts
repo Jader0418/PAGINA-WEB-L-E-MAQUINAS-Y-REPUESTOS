@@ -488,27 +488,6 @@ Deno.serve(async (request: Request) => {
     }, status, origin);
   }
 
-  let pdfBytes: Uint8Array;
-  try {
-    pdfBytes = await buildQuotePdf(quoteData);
-  } catch (error) {
-    console.error("PDF generation failed:", error instanceof Error ? error.message : "unknown");
-    await supabase.from("quotes").update({
-      email_status: "failed",
-      email_error: "No fue posible generar el documento PDF.",
-      updated_at: new Date().toISOString(),
-    }).eq("id", quoteData.id);
-    return jsonResponse({
-      quoteId: quoteData.id,
-      quoteNumber: quoteData.quoteNumber,
-      createdAt: quoteData.createdAt,
-      emailSent: false,
-      emailStatus: "failed",
-      pdfSignedUrl: null,
-      warning: "La solicitud quedó registrada, pero el PDF no pudo generarse. Contacta a L&E con el consecutivo.",
-    }, 201, origin);
-  }
-
   // Completa la cotización con la descripción y ficha técnica actuales del catálogo maestro.
   // Los datos no enviados por el catálogo se muestran como pendientes; nunca se inventan.
   const requestedSlugs = quoteData.items.map((item: Record<string, any>) => item.productId);
@@ -532,6 +511,27 @@ Deno.serve(async (request: Request) => {
         };
       });
     }
+  }
+
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await buildQuotePdf({ ...quoteData, quote_number: quoteData.quoteNumber, created_at: quoteData.createdAt });
+  } catch (error) {
+    console.error("PDF generation failed:", error instanceof Error ? error.message : "unknown");
+    await supabase.from("quotes").update({
+      email_status: "failed",
+      email_error: "No fue posible generar el documento PDF.",
+      updated_at: new Date().toISOString(),
+    }).eq("id", quoteData.id);
+    return jsonResponse({
+      quoteId: quoteData.id,
+      quoteNumber: quoteData.quoteNumber,
+      createdAt: quoteData.createdAt,
+      emailSent: false,
+      emailStatus: "failed",
+      pdfSignedUrl: null,
+      warning: "La solicitud quedó registrada, pero el PDF no pudo generarse. Contacta a L&E con el consecutivo.",
+    }, 201, origin);
   }
 
   const filename = quoteData.quoteNumber + ".pdf";
